@@ -13,6 +13,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define P1PF 0xD005 // Player 1 to playfield collisions register
+#define HITCLR 0xD01E // Colisiion Clear register
+
 //  <---------- GLOBAL VARIABLES ----------> 
 
 int i;                      //for loop counter (doesnt matter as i will always be initialized to zero)
@@ -327,27 +330,43 @@ void enablePMG() {
                 POKE(playerMissileAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                }
                 break;
             case 'e':
                 horizontalStartP1++;
                 POKE(playerMissileAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                    horizontalStartP1-=3; // go back 2 pixels
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;  
             case 'a':
                 tank_west_display(verticalStartP1);
                 horizontalStartP1--;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1); 
                 break; 
             case 's':
                 POKE(playerMissileAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1-=3;
+                }
                 break; 
             case 'd':
                 tank_east_display(verticalStartP1);
                 horizontalStartP1++;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'q':
@@ -355,6 +374,10 @@ void enablePMG() {
                 POKE(playerMissileAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'z':
@@ -362,6 +385,10 @@ void enablePMG() {
                 POKE(playerMissileAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;                
             case 'c':
@@ -369,8 +396,14 @@ void enablePMG() {
                 POKE(playerMissileAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
         }
+        POKE(HITCLR, 1); // clear all of the collision registers
+
     }
 }
