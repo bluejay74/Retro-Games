@@ -15,6 +15,9 @@
 
 //  <---------- GLOBAL VARIABLES ----------> 
 
+#define P1PF 0xD005 // Player 1 to playfield collisions register
+#define HITCLR 0xD01E // Colisiion Clear register
+
 int i;                      //for loop counter (doesnt matter as i will always be initialized to zero)
 
 //Variables to keep track of player 1 and player 2 score
@@ -308,17 +311,15 @@ void createBitMap()
     POKE(bitMapAddress+116, 42);
 }
 
-void enablePMG()
-{
+void enablePMG() {
     //Enable DMA
     POKE(0x22F, 62);
-    PMBAddress = PEEK(0x6A)-8;
-    POKE(0xD407, PMBAddress);
+    playerAddress = PEEK(0x6A)-8;
+    POKE(0xD407, playerAddress);
     POKE(0xD01D, 3);
 
     //Clear up Player Missile Character
-    missileAddress = (PMBAddress * 256) + 768;
-    playerAddress = (PMBAddress * 256) + 1024;
+    playerAddress = (playerAddress * 256) + 1024;
     for (i = 0; i < 512; i++) {
         POKE(playerAddress + i, 0);
     }
@@ -357,27 +358,43 @@ void enablePMG()
                 POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                }
                 break;
             case 'e':
                 horizontalStartP1++;
                 POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                    horizontalStartP1-=3; // go back 2 pixels
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;  
             case 'a':
                 tank_west_display(verticalStartP1);
                 horizontalStartP1--;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1); 
                 break; 
             case 's':
                 POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1-=3;
+                }
                 break; 
             case 'd':
                 tank_east_display(verticalStartP1);
                 horizontalStartP1++;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'q':
@@ -385,6 +402,10 @@ void enablePMG()
                 POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'z':
@@ -392,6 +413,10 @@ void enablePMG()
                 POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;                
             case 'c':
@@ -399,14 +424,20 @@ void enablePMG()
                 POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
         }
-
+        
         //Testing Missile Location
         //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
         POKE(0xD004, 60);
         POKE(0xD005, 55);
         POKE(missileAddress+200, 255);
+
+        POKE(HITCLR, 1); // clear all of the collision registers
     }
-}
+}    
