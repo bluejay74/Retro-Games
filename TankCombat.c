@@ -15,10 +15,18 @@
 
 //  <---------- GLOBAL VARIABLES ----------> 
 
-int i;                      //for loop counter (doesnt matter as i will always be initialized to zero)
-int I;
+#define P1PF 0xD005 // Player 1 to playfield collisions register
+#define HITCLR 0xD01E // Colisiion Clear register
 
-int playerMissileAddress;
+int i;                      //for loop counter (doesnt matter as i will always be initialized to zero)
+
+//Variables to keep track of player 1 and player 2 score
+char *player1Score = 0;
+char player2Score = 0;
+
+int PMBAddress;
+int playerAddress;
+int missileAddress;
 int bitMapAddress;
 
 int *PMA_P0 = (int *)0xD000;
@@ -30,8 +38,8 @@ int *colLumPM1 = (int *)0x2C1;
 int horizontalStartP0 = 57;     //Starting horizontal location for player 0
 int horizontalStartP1 = 190;    //Starting horizontal location for player 1
 
-int verticalStartP0 = 137;
-int verticalStartP1 = 393;
+int verticalStartP0 = 131;
+int verticalStartP1 = 387;
 
 char key;
 
@@ -58,17 +66,20 @@ void tank_west_display(int location);
 void tank_north_west_display(int location);
 
 /*
-    Customizing display list
+    Functions to build game
 */
 void rearranging_display_list();
+void createBitMap();
 void enablePMG();
 
 // <---------- MAIN DRIVER ---------->
 
 int main() {
-    //Set default display to graphics 3
-    _graphics(3);
+    _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
+    POKE(0x2C8, 66);    //Sets background to red
+    POKE(0x2C5, 26);    //Sets bitmap color to yellow
     rearranging_display_list();
+    createBitMap();
     enablePMG();
 
     while (true) {
@@ -86,7 +97,7 @@ void tank_north_display(int location){
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -99,7 +110,7 @@ void tank_north_east_display(int location) {
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -112,7 +123,7 @@ void tank_east_display(int location) {
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -125,7 +136,7 @@ void tank_south_east_display(int location) {
     int counter = 7;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter--;
     }
 }
@@ -138,7 +149,7 @@ void tank_south_display(int location) {
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -151,7 +162,7 @@ void tank_south_west_display(int location) {
     int counter = 7;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter--;
     }
 }
@@ -164,7 +175,7 @@ void tank_west_display(int location) {
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -177,7 +188,7 @@ void tank_north_west_display(int location) {
     int counter = 0;
 
     for (i = location; i < (location+8); i++) {
-        POKE(playerMissileAddress+i,data[counter]);
+        POKE(playerAddress+i,data[counter]);
         counter++;
     }
 }
@@ -186,17 +197,18 @@ void rearranging_display_list() {
     unsigned int *DLIST_ADDRESS  = OS.sdlstl + OS.sdlsth*256;
     unsigned char *DLIST = (unsigned char *)DLIST_ADDRESS;
 
-    // Write the Display List for Graphics Mode 3
+    // Write the Display List for Graphics Mode
+    // Must contain a total of 192 Scan Lines for display list to function properly 
     unsigned char displayList[] = {
         DL_BLK8,  // 8 blank lines
         DL_BLK8,
         DL_BLK8,
-        DL_LMS(DL_CHR40x8x1), // Load memory scan, 40x8 characters, 1 color
-        0x60, 0x9F,  // Text Memory 
-        DL_CHR40x8x1,
-        DL_CHR40x8x1,
+        DL_LMS(DL_CHR20x16x2), 
+        0xE0, 0x9C,  // Text Memory 
         DL_LMS(DL_MAP40x8x4),
         0x70,0x9E,  //Screen memory
+        DL_MAP40x8x4,
+        DL_MAP40x8x4,
         DL_MAP40x8x4,
         DL_MAP40x8x4,
         DL_MAP40x8x4,
@@ -226,96 +238,115 @@ void rearranging_display_list() {
         POKE(DLIST + i, displayList[i]);
     }
 
-    bitMapAddress = PEEK(DLIST+9) + PEEK(DLIST+10)*256;
+    POKE(0x58,224);
+    POKE(0X59,156);
+    POKE(0X57,2);
+    cputsxy(5, 0, "0");
+    cputsxy(14, 0, "0");
 
-    // <--- Making the playfield ---> SHOULD IMPEMENT THIS IN A DIFFERENT FUNCTION
+    bitMapAddress = PEEK(DLIST+7) + PEEK(DLIST+8)*256;
+
+    createBitMap();
+}
+
+void createBitMap()
+{
     //Making the top and bottom border
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 10; i++)
+    {
         POKE(bitMapAddress+i, 170);
-        POKE(bitMapAddress+190+i, 170);
+        POKE(bitMapAddress+210+i, 170);
     }
 
     //Making the left border
-    for (i = 10; i <= 180; i += 10) {
+    for (i = 10; i <= 200; i += 10)
+    {
         POKE(bitMapAddress+i, 128);
     }
 
     //Making the right border
-    for (i = 19; i <= 189; i += 10) {
+    for (i = 19; i <= 209; i += 10)
+    {
         POKE(bitMapAddress+i, 2);
     }
 
     // <--- Making the sprites --->
-    POKE(bitMapAddress+71, 40);
-    POKE(bitMapAddress+121, 40);
-    for (i = 81; i <= 111; i += 10) {
+    POKE(bitMapAddress+81, 40);
+    POKE(bitMapAddress+131, 40);
+    for (i = 91; i <= 121; i += 10)
+    {
         POKE(bitMapAddress+i, 8);
     }
 
-    POKE(bitMapAddress+78, 40);
-    POKE(bitMapAddress+128, 40);
-    for (i = 88; i <= 118; i += 10) {
+    POKE(bitMapAddress+88, 40);
+    POKE(bitMapAddress+138, 40);
+    for (i = 98; i <= 128; i += 10) 
+    {
         POKE(bitMapAddress+i, 32);
     }
 
-    for (i = 44; i <= 64; i += 10) {
+    for (i = 54; i <= 74; i += 10)
+    {
         POKE(bitMapAddress+i, 2);
     }
 
-    for (i = 45; i <= 65; i += 10) {
+    for (i = 55; i <= 75; i += 10) 
+    {
         POKE(bitMapAddress+i, 128);
     }
 
-    for (i = 134; i <= 154; i += 10) {
+    for (i = 144; i <= 164; i += 10) 
+    {
         POKE(bitMapAddress+i, 2);
     }
 
-    for (i = 135; i <= 155; i += 10) {
+    for (i = 145; i <= 165; i += 10) 
+    {
         POKE(bitMapAddress+i, 128);
     }
 
-    POKE(bitMapAddress+93, 168);
     POKE(bitMapAddress+103, 168);
-    POKE(bitMapAddress+96, 42);
+    POKE(bitMapAddress+113, 168);
     POKE(bitMapAddress+106, 42);
+    POKE(bitMapAddress+116, 42);
 }
 
 void enablePMG() {
     //Enable DMA
     POKE(0x22F, 62);
-    I = PEEK(0x6A)-8;
-    POKE(0xD407, I);
+    playerAddress = PEEK(0x6A)-8;
+    POKE(0xD407, playerAddress);
     POKE(0xD01D, 3);
 
     //Clear up Player Missile Character
-    playerMissileAddress = (I * 256) + 1024;
+    playerAddress = (playerAddress * 256) + 1024;
     for (i = 0; i < 512; i++) {
-        POKE(playerMissileAddress + i, 0);
+        POKE(playerAddress + i, 0);
     }
 
     //Player 1
     POKE(PMA_P0, 57);
-    POKE(colLumPM0,88);
-    POKE(playerMissileAddress+137, 0);
-    POKE(playerMissileAddress+138, 252);
-    POKE(playerMissileAddress+139, 252);
-    POKE(playerMissileAddress+140, 56);
-    POKE(playerMissileAddress+141, 63);
-    POKE(playerMissileAddress+142, 56);
-    POKE(playerMissileAddress+143, 252);
-    POKE(playerMissileAddress+144, 252);
+    POKE(colLumPM0,196);
+    POKE(playerAddress+131, 0);
+    POKE(playerAddress+132, 252);
+    POKE(playerAddress+133, 252);
+    POKE(playerAddress+134, 56);
+    POKE(playerAddress+135, 63);
+    POKE(playerAddress+136, 56);
+    POKE(playerAddress+137, 252);
+    POKE(playerAddress+138, 252);
 
     //Player 2
     POKE(PMA_P1, 190);
-    POKE(colLumPM1, 88);
-    POKE(playerMissileAddress+393, 0);
-    POKE(playerMissileAddress+394, 63);
-    POKE(playerMissileAddress+395, 63);
-    POKE(playerMissileAddress+396, 28);
-    POKE(playerMissileAddress+397, 252);
-    POKE(playerMissileAddress+398, 28);
-    POKE(playerMissileAddress+399, 63);
-    POKE(playerMissileAddress+400, 63);
+    POKE(colLumPM1, 116);
+    POKE(playerAddress+387, 0);
+    POKE(playerAddress+388, 63);
+    POKE(playerAddress+389, 63);
+    POKE(playerAddress+390, 28);
+    POKE(playerAddress+391, 252);
+    POKE(playerAddress+392, 28);
+    POKE(playerAddress+393, 63);
+    POKE(playerAddress+394, 63);
 
     /* Loop until Q is pressed */
     while ((key = cgetc()) != 't')
@@ -324,53 +355,89 @@ void enablePMG() {
         { 
             //Player 1 Controls 
             case 'w':
-                POKE(playerMissileAddress+(verticalStartP1+7), 0);
+                POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                }
                 break;
             case 'e':
                 horizontalStartP1++;
-                POKE(playerMissileAddress+(verticalStartP1+7), 0);
+                POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                    horizontalStartP1-=3; // go back 2 pixels
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;  
             case 'a':
                 tank_west_display(verticalStartP1);
                 horizontalStartP1--;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1); 
                 break; 
             case 's':
-                POKE(playerMissileAddress+verticalStartP1, 0);
+                POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1-=3;
+                }
                 break; 
             case 'd':
                 tank_east_display(verticalStartP1);
                 horizontalStartP1++;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'q':
                 horizontalStartP1--;
-                POKE(playerMissileAddress+(verticalStartP1+7), 0);
+                POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
                 tank_north_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1+=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
             case 'z':
                 horizontalStartP1--;
-                POKE(playerMissileAddress+verticalStartP1, 0);
+                POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;                
             case 'c':
                 horizontalStartP1++;
-                POKE(playerMissileAddress+verticalStartP1, 0);
+                POKE(playerAddress+verticalStartP1, 0);
                 verticalStartP1++;
                 tank_south_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                    verticalStartP1-=3;
+                }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
         }
+        
+        //Testing Missile Location
+        //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
+        POKE(0xD004, 60);
+        POKE(0xD005, 55);
+        POKE(missileAddress+200, 255);
+
+        POKE(HITCLR, 1); // clear all of the collision registers
     }
-}
+}    
