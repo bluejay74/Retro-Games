@@ -35,21 +35,21 @@
 //different tank pictures to be printed
 unsigned int tankPics[16][8] = {
         {8,8,107,127,127,127,99,99}, //NORTH
-        {},
+        {36,100,121,255,255,78,14,4}, //NORTH_15
         {25,58,124,255,223,14,28,24}, //NORTH_EAST
-        {},
+        {28,120,251,124,28,31,62,24}, //NORTH_60
         {0,252,252,56,63,56,252,252}, //EAST
-        {},
+        {24,62,31,28,124,251,120,28}, //EAST_15
         {25,58,124,255,223,14,28,24}, //SOUTH_EAST
-        {},
+        {4,14,78,255,255,121,36}, //EAST_60
         {99,99,127,127,127,107,8,8}, //SOUTH
-        {},
+        {32,112,114,255,255,158,38,36}, //SOUTH_15
         {152,92,62,255,251,112,56,24}, //SOUTH_WEST
-        {},
+        {24,124,248,56,62,223,30,56}, //SOUTH_60
         {0,63,63,28,252,28,63,63}, //WEST
-        {},
+        {56,30,223,62,56,248,124,24}, //WEST_15
         {152,92,62,255,251,112,56,24}, //NORTH_WEST
-        {}
+        {36,38,158,255,255,114,112,32} //WEST_60
 };
 
 //  <---------- GLOBAL VARIABLES ----------> 
@@ -79,33 +79,16 @@ extern char joy_driver; //an external char used to grab the joystick drivers
 //char key;
 
 //  <---------- FUNCTION DECLARATIONS ---------->  
-/*
-    For display direction of tanks
-    1. North
-    2. North East
-    3. East
-    4. South East
-    5. South
-    6. South West
-    7. West
-    8. North West
-*/
 
-//void tank_north_display(int location);
-//void tank_north_east_display(int location);
-//void tank_east_display(int location);
-//void tank_south_east_display(int location);
-//void tank_south_display(int location);
-//void tank_south_west_display(int location);
-//void tank_west_display(int location);
-//void tank_north_west_display(int location);
 
 
 //functions to be implemented
 void fire( int tank);
 void moveForward(int tank);
 void moveBackward(int tank);
+//functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
+void updateplayers(int player);
 
 //moving based off of joystick input, or firing the tank if the player chooses
 void movePlayers(){
@@ -123,6 +106,7 @@ void movePlayers(){
     else if(player2move == JOY_LEFT || player2move == JOY_RIGHT) turnplayer(player2move, 2);
 }
 
+//rotating the player
 void turnplayer(unsigned char turn, int player){
     //for player 1
     if(player == 1){
@@ -137,21 +121,36 @@ void turnplayer(unsigned char turn, int player){
         else if(turn == JOY_LEFT){
             p1Direction = p1Direction - 0x0001;
         }
-
-
-
-
-
-
+        //if the joystick is right
+        else if(turn == JOY_RIGHT){
+            p1Direction = p1Direction + 0x0001;
+        }
+        updateplayers(1);
     }
-
-
     //for player 2
     if(player == 2){
-
+        if(p2Direction == WEST_60 && turn == JOY_RIGHT){
+            p2Direction = NORTH;
+        }
+        else if(p2Direction == NORTH && turn == JOY_LEFT){
+            p2Direction = WEST_60;
+        }
+            //if the joystick is left,
+        else if(turn == JOY_LEFT){
+            p2Direction = p2Direction - 0x0001;
+        }
+            //if the joystick is right
+        else if(turn == JOY_RIGHT){
+            p2Direction = p2Direction + 0x0001;
+        }
+        updateplayers(2);
     }
 }
 
+//updating the player's orientation, or position
+void updateplayers(int player){
+
+}
 
 /*
     Customizing display list
