@@ -15,22 +15,22 @@
 #include <stdlib.h>
 
 //defining the 16 movement positions
-#define NORTH               0x0000
-#define NORTH_15            0x0001
-#define NORTH_EAST          0x0010
-#define NORTH_60            0x0011
-#define EAST                0x0100
-#define EAST_15             0x0101
-#define EAST_SOUTH          0x0110
-#define EAST_60             0x0111
-#define SOUTH               0x1000
-#define SOUTH_15            0x1001
-#define SOUTH_WEST          0x1010
-#define SOUTH_60            0x1011
-#define WEST                0x1100
-#define WEST_15             0x1101
-#define WEST_NORTH          0x1110
-#define WEST_60             0x1111
+#define NORTH               0
+#define NORTH_15            1
+#define NORTH_EAST          2
+#define NORTH_60            3
+#define EAST                4
+#define EAST_15             5
+#define EAST_SOUTH          6
+#define EAST_60             7
+#define SOUTH               8
+#define SOUTH_15            9
+#define SOUTH_WEST          10
+#define SOUTH_60            11
+#define WEST                12
+#define WEST_15             13
+#define WEST_NORTH          14
+#define WEST_60             15
 
 //different tank pictures to be printed
 unsigned int tankPics[16][8] = {
@@ -67,16 +67,20 @@ int *colLumPM1 = (int *)0x2C1;
 int horizontalStartP0 = 57;
 int horizontalStartP1 = 190;
 
-unsigned char p1Direction = EAST;
-unsigned char p2Direction = WEST;
+unsigned int p1Direction = EAST;
+unsigned int p2Direction = WEST;
 unsigned char p1LastMove;
+unsigned char p2LastMove;
 
 int verticalStartP0 = 137;
 int verticalStartP1 = 393;
 
+int p1Location = 137;
+int p2Location = 393;
+
 extern char joy_driver; //an external char used to grab the joystick drivers
 
-//char key;
+char key; //char for keyboard input
 
 //  <---------- FUNCTION DECLARATIONS ---------->  
 
@@ -86,9 +90,10 @@ extern char joy_driver; //an external char used to grab the joystick drivers
 void fire( int tank);
 void moveForward(int tank);
 void moveBackward(int tank);
+void checkCollision();
 //functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
-void updateplayers(int player);
+void updateplayerDir(int player);
 
 //moving based off of joystick input, or firing the tank if the player chooses
 void movePlayers(){
@@ -119,16 +124,16 @@ void turnplayer(unsigned char turn, int player){
         }
         //if the joystick is left,
         else if(turn == JOY_LEFT){
-            p1Direction = p1Direction - 0x0001;
+            p1Direction = p1Direction - 1;
         }
         //if the joystick is right
         else if(turn == JOY_RIGHT){
-            p1Direction = p1Direction + 0x0001;
+            p1Direction = p1Direction + 1;
         }
-        updateplayers(1);
+        updateplayerDir(1);
     }
     //for player 2
-    if(player == 2){
+    else if(player == 2){
         if(p2Direction == WEST_60 && turn == JOY_RIGHT){
             p2Direction = NORTH;
         }
@@ -137,18 +142,73 @@ void turnplayer(unsigned char turn, int player){
         }
             //if the joystick is left,
         else if(turn == JOY_LEFT){
-            p2Direction = p2Direction - 0x0001;
+            p2Direction = p2Direction - 1;
         }
             //if the joystick is right
         else if(turn == JOY_RIGHT){
-            p2Direction = p2Direction + 0x0001;
+            p2Direction = p2Direction + 1;
         }
-        updateplayers(2);
+        updateplayerDir(2);
     }
 }
 
 //updating the player's orientation, or position
-void updateplayers(int player){
+void updateplayerDir(int player){
+    //updating player 2
+    if(player == 2){
+        if(p2Direction == SOUTH_15 || p2Direction == SOUTH_60 || p2Direction == SOUTH_WEST || p2Direction == EAST_15 || p2Direction == EAST_SOUTH || p2Direction == EAST_60){
+            int counter = 7;
+            for(i = p2Location; i < p2Location + 8; i++){
+                POKE(playerMissileAddress + i, tankPics[p2Direction][counter]);
+//              counter--;
+            }
+        }
+        else{
+            int counter = 0;
+            for(i = p2Location; i < p2Location + 8; i++){
+                POKE(playerMissileAddress + i, tankPics[p2Direction][counter]);
+//              counter++;
+            }
+        }
+    }
+    //updating player 1
+    else if(player == 1){
+        if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
+            int counter = 7;
+            for(i = p2Location; i < p2Location + 8; i++){
+                POKE(playerMissileAddress + i, tankPics[p1Direction][counter]);
+//              counter--;
+            }
+        }
+        else{
+            int counter = 0;
+            for(i = p2Location; i < p2Location + 8; i++){
+                POKE(playerMissileAddress + i, tankPics[p1Direction][counter]);
+//              counter++;
+            }
+        }
+    }
+    //checking to see if the movement caused a collision
+    checkCollision();
+}
+
+//add a check to the collision registers
+void checkCollision(){
+
+}
+
+//move the tank forward
+void moveForward(int tank){
+
+}
+
+//move the tank backward
+void moveBackward(int tank){
+
+}
+
+//fire a projectile from the tank
+void Fire(int tank){
 
 }
 
@@ -173,118 +233,7 @@ int main() {
     return 0;
 }
 
-// FUNCTION IMPLEMENTATIONS
-//void tank_north_display(int location){
-//    //tank picture
-//    unsigned int data[] = {
-//        8,8,107,127,127,127,99,99
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
 
-//void tank_north_east_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        25,58,124,255,223,14,28,24
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
-
-//void tank_east_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        0,252,252,56,63,56,252,252
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
-
-//void tank_south_east_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        25,58,124,255,223,14,28,24
-//    };
-//
-//    int counter = 7;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter--;
-//    }
-//}
-
-//void tank_south_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        99,99,127,127,127,107,8,8
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
-
-//void tank_south_west_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        152,92,62,255,251,112,56,24
-//    };
-//
-//    int counter = 7;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter--;
-//    }
-//}
-
-//void tank_west_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        0,63,63,28,252,28,63,63
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
-
-//void tank_north_west_display(int location) {
-//    //tank picture
-//    unsigned int data[] = {
-//        152,92,62,255,251,112,56,24
-//    };
-//
-//    int counter = 0;
-//
-//    for (i = location; i < (location+8); i++) {
-//        POKE(playerMissileAddress+i,data[counter]);
-//        counter++;
-//    }
-//}
 
 void rearranging_display_list() {
     unsigned int *DLIST_ADDRESS  = OS.sdlstl + OS.sdlsth*256;
