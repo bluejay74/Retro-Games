@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <joystick.h>
 
 //  <---------- GLOBAL VARIABLES ----------> 
 
@@ -43,6 +44,8 @@ int verticalStartP1 = 387;
 
 char key;
 
+
+
 //  <---------- FUNCTION DECLARATIONS ---------->  
 /*
     For display direction of tanks
@@ -71,10 +74,31 @@ void tank_north_west_display(int location);
 void rearranging_display_list();
 void createBitMap();
 void enablePMG();
+void movePlayers();
 
 // <---------- MAIN DRIVER ---------->
 
+/* int main() {
+    _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
+    POKE(0x2C8, 66);    //Sets background to red
+    POKE(0x2C5, 26);    //Sets bitmap color to yellow
+    rearranging_display_list();
+    createBitMap();
+    enablePMG();
+    
+    while (true) {
+
+    }
+    return 0;
+} */
+
 int main() {
+/*     if (joy_load_driver(joy_stddrv) != JOY_ERR_OK){
+        //joystick driver error
+        return 0;
+        printf(joy_load_driver(joy_stddrv));
+    } */
+    //joy_install(&JOYSTICK_DRIVER);
     _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
     POKE(0x2C8, 66);    //Sets background to red
     POKE(0x2C5, 26);    //Sets bitmap color to yellow
@@ -82,8 +106,11 @@ int main() {
     createBitMap();
     enablePMG();
 
+    // Main loop
     while (true) {
-
+        movePlayers();
+        POKE(HITCLR, 1); // clear all of the collision registers 
+        waitvsync(); // wait for the next frame
     }
     return 0;
 }
@@ -348,8 +375,15 @@ void enablePMG() {
     POKE(playerAddress+393, 63);
     POKE(playerAddress+394, 63);
 
-    /* Loop until Q is pressed */
-    while ((key = cgetc()) != 't')
+    //Testing Missile Location
+    //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
+    POKE(0xD004, 60);
+    POKE(0xD005, 55);
+    POKE(missileAddress+200, 255);
+
+
+     /* Loop until Q is pressed */
+    /* while ((key = cgetc()) != 't')
     {
         switch (key) 
         { 
@@ -434,10 +468,146 @@ void enablePMG() {
         
         //Testing Missile Location
         //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
-        POKE(0xD004, 60);
-        POKE(0xD005, 55);
-        POKE(missileAddress+200, 255);
+        //POKE(0xD004, 60);
+        //POKE(0xD005, 55);
+        //POKE(missileAddress+200, 255);
 
-        POKE(HITCLR, 1); // clear all of the collision registers
+        POKE(HITCLR, 1); // clear all of the collision registers 
+    }  */
+}
+
+//moving based off of joystick input, or firing the tank if the player chooses
+/* void movePlayers() {
+    //joystick code
+    //CODE NEEDS TO HAVE UPDATED JOYSTICK METHODS ---------------//
+    //	if(JOY_BTN_FIRE(joy)){      }
+    //
+    unsigned char player1move = joy_read(JOY_1);
+    //unsigned char player2move = joy_read(JOY_2);
+    //moving player 1
+    //if(player1move == JOY_BTN_1(player1move)) fire(1);
+    if (player1move == JOY_UP(player1move)){
+        POKE(playerAddress+(verticalStartP1+7), 0);
+        verticalStartP1--;
+        tank_north_display(verticalStartP1);
+        if (PEEK(P1PF) !=  0x00){
+            verticalStartP1+=3; // go back 3 pixels if there was collision
+        }
+    } else if (player1move == JOY_DOWN(player1move)){
+        POKE(playerAddress+verticalStartP1, 0);
+        verticalStartP1++;
+        tank_south_display(verticalStartP1);
+        if (PEEK(P1PF) !=  0x00){
+            verticalStartP1-=3; // go back 3 pixels if there was collision
+        }
+    } else if (player1move == JOY_LEFT(player1move)){
+        tank_west_display(verticalStartP1);
+        horizontalStartP1--;
+        if (PEEK(P1PF) !=  0x00){
+            horizontalStartP1+=3; // go back 3 pixels if there was collision
+        }
+        POKE(PMA_P1, horizontalStartP1);
+    } else if (player1move == JOY_RIGHT(player1move)){
+        tank_east_display(verticalStartP1);
+        horizontalStartP1++;
+        if (PEEK(P1PF) !=  0x00){
+            horizontalStartP1-=3; // go back 3 pixels if there was collision
+        }
+        POKE(PMA_P1, horizontalStartP1);
+    } */
+
+    /* //moving player 2
+    if(player2move == JOY_BTN_1) fire(2);
+    else if(player2move == JOY_UP) moveForward(2);
+    else if(player2move == JOY_DOWN) moveBackward(2);
+    else if(player2move == JOY_LEFT || player2move == JOY_RIGHT) turnplayer(player2move, 2);
+    
+} */   
+
+void movePlayers(){
+    if (kbhit() != 0){
+       key = cgetc(); 
+    }else{
+        return;
     }
-}    
+     switch (key) 
+        { 
+            //Player 1 Controls 
+            case 'w':
+                POKE(playerAddress+(verticalStartP1+7), 0);
+                verticalStartP1--;
+                tank_north_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                }
+                break;
+            case 'e':
+                horizontalStartP1++;
+                POKE(playerAddress+(verticalStartP1+7), 0);
+                verticalStartP1--;
+                tank_north_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1+=3; // go back 2 pixels
+                    horizontalStartP1-=3; // go back 2 pixels
+                }
+                POKE(PMA_P1, horizontalStartP1);
+                break;  
+            case 'a':
+                tank_west_display(verticalStartP1);
+                horizontalStartP1--;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                }
+                POKE(PMA_P1, horizontalStartP1); 
+                break; 
+            case 's':
+                POKE(playerAddress+verticalStartP1, 0);
+                verticalStartP1++;
+                tank_south_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    verticalStartP1-=3;
+                }
+                break; 
+            case 'd':
+                tank_east_display(verticalStartP1);
+                horizontalStartP1++;
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                }
+                POKE(PMA_P1, horizontalStartP1);
+                break;
+            case 'q':
+                horizontalStartP1--;
+                POKE(playerAddress+(verticalStartP1+7), 0);
+                verticalStartP1--;
+                tank_north_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1+=3;
+                }
+                POKE(PMA_P1, horizontalStartP1);
+                break;
+            case 'z':
+                horizontalStartP1--;
+                POKE(playerAddress+verticalStartP1, 0);
+                verticalStartP1++;
+                tank_south_west_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1+=3;
+                    verticalStartP1-=3;
+                }
+                POKE(PMA_P1, horizontalStartP1);
+                break;                
+            case 'c':
+                horizontalStartP1++;
+                POKE(playerAddress+verticalStartP1, 0);
+                verticalStartP1++;
+                tank_south_east_display(verticalStartP1);
+                if (PEEK(P1PF) !=  0x00){
+                    horizontalStartP1-=3;
+                    verticalStartP1-=3;
+                }
+                POKE(PMA_P1, horizontalStartP1);
+                break;
+        }
+}
