@@ -78,27 +78,7 @@ void movePlayers();
 
 // <---------- MAIN DRIVER ---------->
 
-/* int main() {
-    _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
-    POKE(0x2C8, 66);    //Sets background to red
-    POKE(0x2C5, 26);    //Sets bitmap color to yellow
-    rearranging_display_list();
-    createBitMap();
-    enablePMG();
-    
-    while (true) {
-
-    }
-    return 0;
-} */
-
 int main() {
-/*     if (joy_load_driver(joy_stddrv) != JOY_ERR_OK){
-        //joystick driver error
-        return 0;
-        printf(joy_load_driver(joy_stddrv));
-    } */
-    //joy_install(&JOYSTICK_DRIVER);
     _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
     POKE(0x2C8, 66);    //Sets background to red
     POKE(0x2C5, 26);    //Sets bitmap color to yellow
@@ -380,100 +360,7 @@ void enablePMG() {
     POKE(0xD004, 60);
     POKE(0xD005, 55);
     POKE(missileAddress+200, 255);
-
-
-     /* Loop until Q is pressed */
-    /* while ((key = cgetc()) != 't')
-    {
-        switch (key) 
-        { 
-            //Player 1 Controls 
-            case 'w':
-                POKE(playerAddress+(verticalStartP1+7), 0);
-                verticalStartP1--;
-                tank_north_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    verticalStartP1+=3; // go back 2 pixels
-                }
-                break;
-            case 'e':
-                horizontalStartP1++;
-                POKE(playerAddress+(verticalStartP1+7), 0);
-                verticalStartP1--;
-                tank_north_east_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    verticalStartP1+=3; // go back 2 pixels
-                    horizontalStartP1-=3; // go back 2 pixels
-                }
-                POKE(PMA_P1, horizontalStartP1);
-                break;  
-            case 'a':
-                tank_west_display(verticalStartP1);
-                horizontalStartP1--;
-                if (PEEK(P1PF) !=  0x00){
-                    horizontalStartP1+=3;
-                }
-                POKE(PMA_P1, horizontalStartP1); 
-                break; 
-            case 's':
-                POKE(playerAddress+verticalStartP1, 0);
-                verticalStartP1++;
-                tank_south_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    verticalStartP1-=3;
-                }
-                break; 
-            case 'd':
-                tank_east_display(verticalStartP1);
-                horizontalStartP1++;
-                if (PEEK(P1PF) !=  0x00){
-                    horizontalStartP1-=3;
-                }
-                POKE(PMA_P1, horizontalStartP1);
-                break;
-            case 'q':
-                horizontalStartP1--;
-                POKE(playerAddress+(verticalStartP1+7), 0);
-                verticalStartP1--;
-                tank_north_west_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    horizontalStartP1+=3;
-                    verticalStartP1+=3;
-                }
-                POKE(PMA_P1, horizontalStartP1);
-                break;
-            case 'z':
-                horizontalStartP1--;
-                POKE(playerAddress+verticalStartP1, 0);
-                verticalStartP1++;
-                tank_south_west_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    horizontalStartP1+=3;
-                    verticalStartP1-=3;
-                }
-                POKE(PMA_P1, horizontalStartP1);
-                break;                
-            case 'c':
-                horizontalStartP1++;
-                POKE(playerAddress+verticalStartP1, 0);
-                verticalStartP1++;
-                tank_south_east_display(verticalStartP1);
-                if (PEEK(P1PF) !=  0x00){
-                    horizontalStartP1-=3;
-                    verticalStartP1-=3;
-                }
-                POKE(PMA_P1, horizontalStartP1);
-                break;
-        }
-        
-        //Testing Missile Location
-        //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
-        //POKE(0xD004, 60);
-        //POKE(0xD005, 55);
-        //POKE(missileAddress+200, 255);
-
-        POKE(HITCLR, 1); // clear all of the collision registers 
-    }  */
+    
 }
 
 //moving based off of joystick input, or firing the tank if the player chooses
