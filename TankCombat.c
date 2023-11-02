@@ -65,9 +65,6 @@ int *PMA_P2 = (int *)0xD001;
 int *colLumPM1 = (int *)0x2C0;
 int *colLumPM2 = (int *)0x2C1;
 
-int horizontalStartP1 = 57;
-int horizontalStartP2 = 190;
-
 unsigned int p1Direction = EAST;
 unsigned int p2Direction = WEST;
 unsigned char p1LastMove;
@@ -75,12 +72,13 @@ unsigned char p2LastMove;
 
 int verticalStartP1= 137;
 int verticalStartP2 = 393;
+int horizontalStartP1 = 57;
+int horizontalStartP2 = 190;
 
 int p1Location = 137;
 int p2Location = 393;
-
-//extern char joy_stddrv[]; //an external char used to grab the joystick drivers
-
+int p1Horizontal = 57;
+int p2Horizontal = 190;
 
 
 char key; //char for keyboard input
@@ -231,19 +229,25 @@ void moveForward(int tank){
         }
         //movement north-ish cases
         if(p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60){
+            unsigned int x;
+            unsigned int y;
 
         }
         //movement south-ish cases
         if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
+            unsigned int x;
+            unsigned int y;
 
         }
         //movement west
         if(p1Direction == WEST){
-
+            p1Horizontal--;
+            POKE(PMA_P1, p1Horizontal);
         }
         //movement east
         if(p1Direction == EAST){
-
+            p1Horizontal++;
+            POKE(PMA_P1, p1Horizontal);
         }
         updateplayerDir(1);
     }
@@ -270,19 +274,25 @@ void moveBackward(int tank){
         }
         //movement north-ish cases
         if(p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60){
+            unsigned int x;
+            unsigned int y;
 
         }
         //movement south-ish cases
         if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
+            unsigned int x;
+            unsigned int y;
 
         }
         //movement west
         if(p1Direction == WEST){
-
+            p1Horizontal++;
+            POKE(PMA_P1, p1Horizontal);
         }
         //movement east
         if(p1Direction == EAST){
-
+            p1Horizontal--;
+            POKE(PMA_P1, p1Horizontal);
         }
         updateplayerDir(1);
     }
