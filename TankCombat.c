@@ -222,6 +222,7 @@ void moveForward(int tank){
         if(p1Direction == NORTH){
             POKE(playerMissileAddress+(p1Location+7), 0);
             p1Location--;
+
         }
         //movement for south
         if(p1Direction == SOUTH){
@@ -244,7 +245,7 @@ void moveForward(int tank){
         if(p1Direction == EAST){
 
         }
-
+        updateplayerDir(1);
     }
 
     //moving forward tank 2
@@ -259,13 +260,13 @@ void moveBackward(int tank){
     if(tank == 1){
         //movement for north
         if(p1Direction == NORTH){
-            POKE(playerMissileAddress+p2Location, 0);
-            p2Location++;
+            POKE(playerMissileAddress+p1Location, 0);
+            p1Location++;
         }
         //movement for south
         if(p1Direction == SOUTH){
-            POKE(playerMissileAddress+(p2Location+7), 0);
-            p2Location--;
+            POKE(playerMissileAddress+(p1Location+7), 0);
+            p1Location--;
         }
         //movement north-ish cases
         if(p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60){
@@ -283,7 +284,7 @@ void moveBackward(int tank){
         if(p1Direction == EAST){
 
         }
-
+        updateplayerDir(1);
     }
 
     if(tank == 2){
