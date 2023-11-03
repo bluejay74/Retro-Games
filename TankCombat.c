@@ -10,6 +10,7 @@
 #include <peekpoke.h>
 #include <conio.h>
 #include <stdbool.h>
+#include <6502.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <joystick.h>
@@ -80,7 +81,6 @@ void movePlayers();
 
 int main() {
     _graphics(18);      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
-    POKE(0x2C8, 66);    //Sets background to red
     POKE(0x2C5, 26);    //Sets bitmap color to yellow
     rearranging_display_list();
     createBitMap();
@@ -92,6 +92,7 @@ int main() {
         POKE(HITCLR, 1); // clear all of the collision registers 
         waitvsync(); // wait for the next frame
     }
+
     return 0;
 }
 
@@ -240,10 +241,11 @@ void rearranging_display_list() {
     };
 
     int i;
-    // Copy the display list into memory, for example at 0x4000
+
     for (i = 0; i < sizeof(displayList); i++) {
         POKE(DLIST + i, displayList[i]);
     }
+
 
     POKE(0x58,224);
     POKE(0X59,156);
@@ -321,15 +323,22 @@ void createBitMap()
 void enablePMG() {
     //Enable DMA
     POKE(0x22F, 62);
-    playerAddress = PEEK(0x6A)-8;
-    POKE(0xD407, playerAddress);
+    PMBAddress = PEEK(0x6A)-8;
+    POKE(0xD407, PMBAddress);
     POKE(0xD01D, 3);
 
     //Clear up Player Missile Character
-    playerAddress = (playerAddress * 256) + 1024;
+    playerAddress = (PMBAddress * 256) + 1024;
+    missileAddress = (PMBAddress * 256) + 768;
     for (i = 0; i < 512; i++) {
         POKE(playerAddress + i, 0);
     }
+
+    //Testing Missile Location
+    //Set missile location, to just the horizontal and vertical positions of the tank (middle barrel position to be exact)
+    POKE(0xD004, 57);
+    POKE(0xD005, 56);
+    POKE(missileAddress+174, 6);
 
     //Player 1
     POKE(PMA_P0, 57);
@@ -419,7 +428,6 @@ void movePlayers(){
     }
      switch (key) 
         { 
-            //Player 1 Controls 
             case 'w':
                 POKE(playerAddress+(verticalStartP1+7), 0);
                 verticalStartP1--;
@@ -496,5 +504,6 @@ void movePlayers(){
                 }
                 POKE(PMA_P1, horizontalStartP1);
                 break;
-        }
+    }
+}    
 }
