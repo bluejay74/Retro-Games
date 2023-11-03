@@ -233,21 +233,37 @@ void moveForward(int tank){
             //Y ifs
             if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
             if(p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
-            if(p1Direction < 4) x = x*(-1);
-            //x = -2, -1, 1, 2
-            //y = 2, 1
+            if(p1Direction < 4) p1Horizontal = p1Horizontal + x;
+            else p1Horizontal = p1Horizontal - x;
+            //x possible outcomes = -2, -1, 1, 2
+            //y possible outcomes = 2, 1
 
-            p1Horizontal = p1Horizontal + x;
             POKE(playerMissileAddress+(p1Location +7), 0);
+            POKE(playerMissileAddress+(p1Location +6), 0);
             p1Location = p1Location - y;
             updateplayerDir(1);
             POKE(PMA_P1, p1Horizontal);
         }
         //movement south-ish cases
         if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
-            int x;
-            int y;
+            int x = 0;
+            int y = 0;
+            //X ifs
+            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_15 || p1Direction == EAST_60) x = 1;
+            if(p1Direction == SOUTH_60 || p1Direction == EAST_15) x = 2;
+            //Y ifs
+            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_60 || p1Direction == EAST_15) y = 1;
+            if(p1Direction == SOUTH_15 || p1Direction == EAST_60) y = 2;
+            if(p1Direction < 8) p1Horizontal = p1Horizontal + x;
+            else p1Horizontal = p1Horizontal - x;
+            //x possible outcomes = -2, -1, 1, 2
+            //y possible outcomes = 2, 1
 
+            POKE(playerMissileAddress+(p1Location), 0);
+            POKE(playerMissileAddress+(p1Location +1), 0);
+            p1Location = p1Location + y;
+            updateplayerDir(1);
+            POKE(PMA_P1, p1Horizontal);
         }
         //movement west
         if(p1Direction == WEST){
@@ -292,12 +308,13 @@ void moveBackward(int tank){
             //Y ifs
             if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
             if(p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
-            if(p1Direction < 4) x = x*(-1);
+            if(p1Direction > 4) p1Horizontal = p1Horizontal + x;
+            else p1Horizontal = p1Horizontal - x;
             //x = -2, -1, 1, 2
             //y = 2, 1
 
-            p1Horizontal = p1Horizontal - x;
-            POKE(playerMissileAddress+(p1Location +7), 0);
+            POKE(playerMissileAddress+(p1Location), 0);
+            POKE(playerMissileAddress+(p1Location + 1), 0);
             p1Location = p1Location + y;
             updateplayerDir(1);
             POKE(PMA_P1, p1Horizontal);
@@ -305,9 +322,24 @@ void moveBackward(int tank){
         }
         //movement south-ish cases
         if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
-            int x;
-            int y;
+            int x = 0;
+            int y = 0;
+            //X ifs
+            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_15 || p1Direction == EAST_60) x = 1;
+            if(p1Direction == SOUTH_60 || p1Direction == EAST_15) x = 2;
+            //Y ifs
+            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_60 || p1Direction == EAST_15) y = 1;
+            if(p1Direction == SOUTH_15 || p1Direction == EAST_60) y = 2;
+            if(p1Direction < 8) p1Horizontal = p1Horizontal - x;
+            else p1Horizontal = p1Horizontal + x;
+            //x possible outcomes = -2, -1, 1, 2
+            //y possible outcomes = 2, 1
 
+            POKE(playerMissileAddress+(p1Location + 7), 0);
+            POKE(playerMissileAddress+(p1Location +6), 0);
+            p1Location = p1Location - y;
+            updateplayerDir(1);
+            POKE(PMA_P1, p1Horizontal);
         }
         //movement west
         if(p1Direction == WEST){
@@ -440,60 +472,4 @@ void enablePMG() {
     POKE(playerMissileAddress+400, 63);
 
 
-    /* Loop until Q is pressed */
-//    while ((key = cgetc()) != 't')
-//    {
-//        switch (key)
-//        {
-//            //Player 1 Controls
-//            case 'w':
-//                POKE(playerMissileAddress+(verticalStartP1+7), 0);
-//                verticalStartP1--;
-//                tank_north_display(verticalStartP1);
-//                break;
-//            case 'e':
-//                horizontalStartP1++;
-//                POKE(playerMissileAddress+(verticalStartP1+7), 0);
-//                verticalStartP1--;
-//                tank_north_east_display(verticalStartP1);
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//            case 'a':
-//                tank_west_display(verticalStartP1);
-//                horizontalStartP1--;
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//            case 's':
-//                POKE(playerMissileAddress+verticalStartP1, 0);
-//                verticalStartP1++;
-//                tank_south_display(verticalStartP1);
-//                break;
-//            case 'd':
-//                tank_east_display(verticalStartP1);
-//                horizontalStartP1++;
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//            case 'q':
-//                horizontalStartP1--;
-//                POKE(playerMissileAddress+(verticalStartP1+7), 0);
-//                verticalStartP1--;
-//                tank_north_west_display(verticalStartP1);
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//            case 'z':
-//                horizontalStartP1--;
-//                POKE(playerMissileAddress+verticalStartP1, 0);
-//                verticalStartP1++;
-//                tank_south_west_display(verticalStartP1);
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//            case 'c':
-//                horizontalStartP1++;
-//                POKE(playerMissileAddress+verticalStartP1, 0);
-//                verticalStartP1++;
-//                tank_south_east_display(verticalStartP1);
-//                POKE(PMA_P1, horizontalStartP1);
-//                break;
-//        }
-//    }
 }
