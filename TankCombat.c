@@ -23,7 +23,7 @@
 #define NORTH_60            3
 #define EAST                4
 #define EAST_15             5
-#define EAST_SOUTH          6
+#define SOUTH_EAST          6
 #define EAST_60             7
 #define SOUTH               8
 #define SOUTH_15            9
@@ -31,7 +31,7 @@
 #define SOUTH_60            11
 #define WEST                12
 #define WEST_15             13
-#define WEST_NORTH          14
+#define NORTH_WEST          14
 #define WEST_60             15
 
 /*
@@ -90,9 +90,14 @@ const int horizontalStartP1 = 190;
 
 //Variables to track vertical and horizontal locations of players
 int p0VerticalLocation = 131;
-int p0HorizontalLocation = 57;
+int p0HorizontalLocation = 57; 
 int p1VerticalLocation = 387;
 int p1HorizontalLocation = 190;
+
+int m0LastHorizontalLocation;
+int m0LastverticalLocation;
+int m1LastHorizontalLocation;
+int m1LastVerticalLocation;
 
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
@@ -103,6 +108,7 @@ void initializeScore();
 void createBitMap();
 void enablePMGraphics();
 void setUpTankDisplay();
+void setUpMissile();
 
 void movePlayers();
 void fire(int tank);
@@ -126,9 +132,11 @@ int main() {
     createBitMap();
     enablePMGraphics();
     setUpTankDisplay();
+    //setUpMissile();
 
     while (true) {
         movePlayers();
+        setUpMissile();
     }
     return 0;
 }
@@ -270,6 +278,12 @@ void enablePMGraphics() {
     //Clear up default built-in characters in Player's address
     for (i = 0; i < 512; i++) {
         POKE(playerAddress + i, 0);
+
+        //Clear up default built-in characters in Missile's address
+        if (i <= 256)
+        {
+            POKE(missileAddress + i, 0);
+        }
     }
 }
 
@@ -281,7 +295,7 @@ void setUpTankDisplay() {
     POKE(colLumPM0, 196);
 
     for (i = 131; i < 139; i++) {
-        POKE(playerAddress+i, tankPics[EAST][counter]);
+        POKE(playerAddress+i, tankPics[NORTH_15][counter]);
         counter++;
     }
     counter = 0;
@@ -295,6 +309,116 @@ void setUpTankDisplay() {
         counter++;
     }
     counter = 0;
+}
+
+void setUpMissile() //Parameter must include (Tank Direction - for poking the missile initial position (at the tip of the barrel) and, their vertical location, and their horizontal position)
+{   
+    //Clear missile register before poking anything: Find a better way O(1)
+    for (i = 0; i < 256; i++)
+    {
+        POKE(missileAddress + i, 0);
+    }
+
+
+    //Player 0 missile position for setups
+    if (p0Direction == NORTH)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+4;
+        m0LastverticalLocation = p0VerticalLocation;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+4);
+        // POKE(missileAddress+p0VerticalLocation, 2);
+    }
+    else if (p0Direction == NORTH_15)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+5;
+        m0LastverticalLocation = p0VerticalLocation;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+5);
+        // POKE(missileAddress+p0VerticalLocation, 2);
+    }
+    else if (p0Direction == NORTH_EAST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+7;
+        m0LastverticalLocation = p0VerticalLocation;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+        // POKE(missileAddress+p0VerticalLocation, 2);
+    }
+    else if (p0Direction == NORTH_60)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+7;
+        m0LastverticalLocation = p0VerticalLocation+2;        
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+        // POKE(missileAddress+p0VerticalLocation+2, 2);
+    }
+    else if (p0Direction == EAST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+7;
+        m0LastverticalLocation = p0VerticalLocation+4;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+        // POKE(missileAddress+p0VerticalLocation+4, 2);        
+    }
+    else if (p0Direction == EAST_15)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+5;
+        m0LastverticalLocation = p0VerticalLocation+7;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+5);
+        // POKE(missileAddress+p0VerticalLocation+7, 2);
+    }
+    else if (p0Direction == SOUTH_EAST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+7;
+        m0LastverticalLocation = p0VerticalLocation+7;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+        // POKE(missileAddress+p0VerticalLocation+7, 2);        
+    }
+    else if (p0Direction == EAST_60)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+7;
+        m0LastverticalLocation = p0VerticalLocation+5;
+        // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+        // POKE(missileAddress+p0VerticalLocation+5, 2);            
+    } 
+    else if (p0Direction == SOUTH)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+4;
+        m0LastverticalLocation = p0VerticalLocation+7;
+    }
+    else if (p0Direction == SOUTH_15)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+2;
+        m0LastverticalLocation = p0VerticalLocation+7;
+    }
+    else if (p0Direction == SOUTH_WEST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation;
+        m0LastverticalLocation = p0VerticalLocation+7;
+    }
+    else if (p0Direction == SOUTH_60)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation;
+        m0LastverticalLocation = p0VerticalLocation+5;
+    }
+    else if (p0Direction == WEST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation;
+        m0LastverticalLocation = p0VerticalLocation+4;        
+    }
+    else if (p0Direction == WEST_15)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+2;
+        m0LastverticalLocation = p0VerticalLocation;
+    }
+    else if (p0Direction == NORTH_WEST)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation;
+        m0LastverticalLocation = p0VerticalLocation;
+    }
+    else if (p0Direction == WEST_60)
+    {
+        m0LastHorizontalLocation = p0HorizontalLocation+2;
+        m0LastverticalLocation = p0VerticalLocation+2;
+    }
+
+    //If missile for player 0 is fired
 }
 
 //moving based off of joystick input, or firing the tank if the player chooses
@@ -360,7 +484,7 @@ void turnplayer(unsigned char turn, int player){
 void updateplayerDir(int player){
     //updating player 1
     if(player == 1){
-        if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH){
+        if(p0Direction == SOUTH_WEST || p0Direction == SOUTH_EAST){
             int counter = 7;
             for(i = p0VerticalLocation; i < p0VerticalLocation + 8; i++){
                 POKE(playerAddress + i, tankPics[p0Direction][counter]);
@@ -378,7 +502,7 @@ void updateplayerDir(int player){
 
     //updating player 2
     else if(player == 2){
-        if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
+        if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == SOUTH_EAST || p1Direction == EAST_60){
             int counter = 7;
             for(i = p1VerticalLocation; i < p1VerticalLocation + 8; i++){
                 POKE(playerAddress + i, tankPics[p1Direction][counter]);
@@ -419,14 +543,14 @@ void moveForward(int tank){
             p0VerticalLocation++;
         }
         //movement north-ish cases
-        if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == WEST_NORTH || p0Direction == WEST_60){
+        if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == NORTH_WEST || p0Direction == WEST_60){
             int x = 0;
             int y = 0;
             //X ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
+            if(p0Direction == NORTH_EAST || p0Direction == NORTH_WEST || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
             if(p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
             //Y ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
+            if(p0Direction == NORTH_EAST || p0Direction == NORTH_WEST || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
             if(p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
             if(p0Direction < 4) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
@@ -440,14 +564,14 @@ void moveForward(int tank){
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement south-ish cases
-        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60){
+        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == SOUTH_EAST || p0Direction == EAST_60){
             int x = 0;
             int y = 0;
             //X ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
+            if(p0Direction == SOUTH_WEST || p0Direction == SOUTH_EAST || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
             if(p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
             //Y ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
+            if(p0Direction == SOUTH_WEST || p0Direction == SOUTH_EAST || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
             if(p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
             if(p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
@@ -494,14 +618,14 @@ void moveBackward(int tank){
             p0VerticalLocation--;
         }
         //movement north-ish cases
-        if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == WEST_NORTH || p0Direction == WEST_60){
+        if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == NORTH_WEST || p0Direction == WEST_60){
             int x = 0;
             int y = 0;
             //X ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
+            if(p0Direction == NORTH_EAST || p0Direction == NORTH_WEST || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
             if(p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
             //Y ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
+            if(p0Direction == NORTH_EAST || p0Direction == NORTH_WEST || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
             if(p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
             if(p0Direction > 4) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
@@ -516,14 +640,14 @@ void moveBackward(int tank){
 
         }
         //movement south-ish cases
-        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60){
+        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == SOUTH_EAST || p0Direction == EAST_60){
             int x = 0;
             int y = 0;
             //X ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
+            if(p0Direction == SOUTH_WEST || p0Direction == SOUTH_EAST || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
             if(p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
             //Y ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
+            if(p0Direction == SOUTH_WEST || p0Direction == SOUTH_EAST || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
             if(p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
             if(p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation - x;
             else p0HorizontalLocation = p0HorizontalLocation + x;
