@@ -703,13 +703,13 @@ void moveBackward(int tank){
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
     if(PEEK(P1PF) != 0x00){
-        if(JOY_UP(p0LastMove)){
+        if(JOY_UP(p1LastMove)){
+            POKE(HITCLR, 1);
             moveBackward(2);
-            POKE(HITCLR, 1);
         }
-        if(JOY_DOWN(p0LastMove)){
-            moveForward(2);
+        if(JOY_DOWN(p1LastMove)){
             POKE(HITCLR, 1);
+            moveForward(2);
         }
     }
 
