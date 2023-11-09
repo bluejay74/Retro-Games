@@ -34,6 +34,7 @@
 #define WEST_NORTH          14
 #define WEST_60             15
 
+
 //collision detection definitions, add all registers
 #define P1PF                0xD005
 
@@ -104,7 +105,9 @@ int p0HorizontalLocation = 57;
 int p1VerticalLocation = 387;
 int p1HorizontalLocation = 190;
 
-//variables to control player movement
+//variables for missile tracking
+int m0LastHorizontalLocation;
+int m0LastverticalLocation;
 
 
 /*
@@ -763,7 +766,7 @@ void fire(int tank){
             // POKE(horizontalRegister_M0, p0HorizontalLocation+5);
             // POKE(missileAddress+p0VerticalLocation+7, 2);
         }
-        else if (p0Direction == SOUTH_EAST)
+        else if (p0Direction == EAST_SOUTH)
         {
             m0LastHorizontalLocation = p0HorizontalLocation+7;
             m0LastverticalLocation = p0VerticalLocation+7;
@@ -807,7 +810,7 @@ void fire(int tank){
             m0LastHorizontalLocation = p0HorizontalLocation+2;
             m0LastverticalLocation = p0VerticalLocation;
         }
-        else if (p0Direction == NORTH_WEST)
+        else if (p0Direction == WEST_NORTH)
         {
             m0LastHorizontalLocation = p0HorizontalLocation;
             m0LastverticalLocation = p0VerticalLocation;
