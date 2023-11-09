@@ -714,5 +714,109 @@ void checkCollision(){
 
 //fire a projectile from the tank
 void fire(int tank){
+    if(tank == 1){
+        for (i = 0; i < 256; i++)
+        {
+            POKE(missileAddress + i, 0);
+        }
 
+        //Player 0 missile position for setups
+        if (p0Direction == NORTH)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+4;
+            m0LastverticalLocation = p0VerticalLocation;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+4);
+            // POKE(missileAddress+p0VerticalLocation, 2);
+        }
+        else if (p0Direction == NORTH_15)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+5;
+            m0LastverticalLocation = p0VerticalLocation;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+5);
+            // POKE(missileAddress+p0VerticalLocation, 2);
+        }
+        else if (p0Direction == NORTH_EAST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+7;
+            m0LastverticalLocation = p0VerticalLocation;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+            // POKE(missileAddress+p0VerticalLocation, 2);
+        }
+        else if (p0Direction == NORTH_60)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+7;
+            m0LastverticalLocation = p0VerticalLocation+2;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+            // POKE(missileAddress+p0VerticalLocation+2, 2);
+        }
+        else if (p0Direction == EAST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+7;
+            m0LastverticalLocation = p0VerticalLocation+4;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+            // POKE(missileAddress+p0VerticalLocation+4, 2);
+        }
+        else if (p0Direction == EAST_15)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+5;
+            m0LastverticalLocation = p0VerticalLocation+7;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+5);
+            // POKE(missileAddress+p0VerticalLocation+7, 2);
+        }
+        else if (p0Direction == SOUTH_EAST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+7;
+            m0LastverticalLocation = p0VerticalLocation+7;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+            // POKE(missileAddress+p0VerticalLocation+7, 2);
+        }
+        else if (p0Direction == EAST_60)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+7;
+            m0LastverticalLocation = p0VerticalLocation+5;
+            // POKE(horizontalRegister_M0, p0HorizontalLocation+7);
+            // POKE(missileAddress+p0VerticalLocation+5, 2);
+        }
+        else if (p0Direction == SOUTH)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+4;
+            m0LastverticalLocation = p0VerticalLocation+7;
+        }
+        else if (p0Direction == SOUTH_15)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+2;
+            m0LastverticalLocation = p0VerticalLocation+7;
+        }
+        else if (p0Direction == SOUTH_WEST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation;
+            m0LastverticalLocation = p0VerticalLocation+7;
+        }
+        else if (p0Direction == SOUTH_60)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation;
+            m0LastverticalLocation = p0VerticalLocation+5;
+        }
+        else if (p0Direction == WEST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation;
+            m0LastverticalLocation = p0VerticalLocation+4;
+        }
+        else if (p0Direction == WEST_15)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+2;
+            m0LastverticalLocation = p0VerticalLocation;
+        }
+        else if (p0Direction == NORTH_WEST)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation;
+            m0LastverticalLocation = p0VerticalLocation;
+        }
+        else if (p0Direction == WEST_60)
+        {
+            m0LastHorizontalLocation = p0HorizontalLocation+2;
+            m0LastverticalLocation = p0VerticalLocation+2;
+        }
+
+    }
 }
