@@ -195,7 +195,7 @@ void rearrangingDisplayList() {
 
     int i;
 
-    for (i = 0; i < sizeof(displayList); i++) {
+    for (i = 0; i < 30; i++) {
         POKE(DLIST + i, displayList[i]);
     }
 
@@ -276,7 +276,8 @@ void createBitMap() {
 
 void enablePMGraphics() {
     POKE(0x22F, 62);                    //Enable Player-Missile DMA single line
-    PMBaseAddress = PEEK(0x6A)-8;       //Get Player-Missile base address 
+    //PMBaseAddress = PEEK(0x6A)-8;       //Get Player-Missile base address
+    PMBaseAddress = 0x2800;
     POKE(0xD407, PMBaseAddress);        //Store Player-Missile base address in base register
     POKE(0xD01D, 3);                    //Enable Player-Missile DMA
 
@@ -450,7 +451,7 @@ void moveForward(int tank){
             POKE(playerAddress+(p0VerticalLocation +7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
-            updateplayerDir(1);
+            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement south-ish cases
@@ -471,7 +472,7 @@ void moveForward(int tank){
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation +1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
-            updateplayerDir(1);
+            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement west
@@ -520,7 +521,7 @@ void moveForward(int tank){
             POKE(playerAddress+(p1VerticalLocation +7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
-            updateplayerDir(2);
+            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement south-ish cases
@@ -541,7 +542,7 @@ void moveForward(int tank){
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation +1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
-            updateplayerDir(1);
+            //updateplayerDir(1);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement west
@@ -592,7 +593,7 @@ void moveBackward(int tank){
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation + 1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
-            updateplayerDir(1);
+            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
 
         }
@@ -614,7 +615,7 @@ void moveBackward(int tank){
             POKE(playerAddress+(p0VerticalLocation + 7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
-            updateplayerDir(1);
+            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement west
@@ -661,7 +662,7 @@ void moveBackward(int tank){
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation + 1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
-            updateplayerDir(2);
+            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
 
         }
@@ -683,7 +684,7 @@ void moveBackward(int tank){
             POKE(playerAddress+(p1VerticalLocation + 7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
-            updateplayerDir(2);
+            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement west
