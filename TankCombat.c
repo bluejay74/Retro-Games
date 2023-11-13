@@ -58,7 +58,7 @@ unsigned int tankPics[16][8] = {
         {0,252,252,56,63,56,252,252},       //EAST
         {24,62,31,28,124,251,120,28},       //EAST_15
         {25,58,124,255,223,14,28,24},       //SOUTH_EAST
-        {4,14,78,255,255,121,36},           //EAST_60
+        {4,14,78,255,255,121,36},               //EAST_60
         {99,99,127,127,127,107,8,8},        //SOUTH
         {32,112,114,255,255,158,38,36},     //SOUTH_15
         {152,92,62,255,251,112,56,24},      //SOUTH_WEST
@@ -70,7 +70,7 @@ unsigned int tankPics[16][8] = {
 };
 
 int i;
-
+int frameDelayCounter = 0;
 //Adresses
 int bitMapAddress;
 int PMBaseAddress;
@@ -92,6 +92,8 @@ unsigned int p0Direction = EAST;
 unsigned int p1Direction = WEST;
 unsigned char p0LastMove;
 unsigned char p1LastMove;
+unsigned char p0history;
+unsigned char p1history;
 
 //Starting vertical and horizontal position of players 
 const int verticalStartP0 = 131;
@@ -127,7 +129,6 @@ void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
 void traverseMissile(unsigned int tankDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
 void moveForward(int tank);
-void moveForward(int tank);
 void moveBackward(int tank);
 void checkCollision();
 //functions to turn and update tank positions
@@ -150,10 +151,21 @@ int main() {
     setUpTankDisplay();
 
     while (true) {
-        movePlayers();
+        //Slows down character movement e.g. (60fps/5) = 12moves/second (it is actually slower than this for some reason)
+        if (frameDelayCounter == 5){
+            movePlayers();
+            frameDelayCounter = 0;
+        }else{
+            frameDelayCounter++;
+        }
+        checkCollision();
+        p1history = p1LastMove; //helps to fix collision bug
+        p0history = p0LastMove; //helps to fix collision bug
+        //waitvsync();
     }
     return 0;
 }
+
 
 /*
  * <-------------------- FUNCTION IMPLEMENTATIONS --------------------> 
@@ -280,6 +292,7 @@ void createBitMap() {
 
 void enablePMGraphics() {
     POKE(0x22F, 62);                    //Enable Player-Missile DMA single line
+    //PMBaseAddress = PEEK(0x6A)-8;       //Get Player-Missile base address
     PMBaseAddress = 0x2800;
     POKE(0xD407, PMBaseAddress);        //Store Player-Missile base address in base register
     POKE(0xD01D, 3);                    //Enable Player-Missile DMA
@@ -291,7 +304,7 @@ void enablePMGraphics() {
     //Clear up default built-in characters in Player's address
     for (i = 0; i < 512; i++) {
         POKE(playerAddress + i, 0);
-        
+
         if (i <= 256)
         {
             POKE(missileAddress + i, 0);
@@ -345,7 +358,7 @@ void movePlayers(){
 
 //rotating the player
 void turnplayer(unsigned char turn, int player){
-    //for player 1
+    //for player 0
     if(player == 0){
         //handling edge cases
         if(p0Direction == WEST_60 && JOY_RIGHT(turn)){
@@ -423,7 +436,7 @@ void updateplayerDir(int player){
     }
 
     //checking to see if the movement caused a collision, is it needed here?
-    checkCollision();
+    //checkCollision();
 }
 
 //move the tank forward
@@ -496,7 +509,9 @@ void moveForward(int tank){
         updateplayerDir(0);
     }
 
-    //moving forward tank 1------------------------------
+
+
+    //moving forward tank 2------------------------------
     else if(tank == 1){
         //movement for north
         if(p1Direction == NORTH){
@@ -707,17 +722,21 @@ void moveBackward(int tank){
 
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
-    if(PEEK(P1PF) != 0x00){
-        if(JOY_UP(p1LastMove)){
-            POKE(HITCLR, 1);
+    if(PEEK(P1PF) != 0x0000){
+        if(JOY_UP(p1history)){
+            moveBackward(2);
+            moveBackward(2);
+            moveBackward(2);
             moveBackward(2);
         }
-        if(JOY_DOWN(p1LastMove)){
-            POKE(HITCLR, 1);
+        else if(JOY_DOWN(p1history)){
+            moveForward(2);
+            moveForward(2);
+            moveForward(2);
             moveForward(2);
         }
     }
-
+    POKE(HITCLR, 1); // Clear ALL of the Collision Registers
 }
 
 //fire a projectile from the tank
@@ -728,7 +747,7 @@ void fire(int tank){
         missileLocationHelper(p0Direction, p0HorizontalLocation, p0VerticalLocation, tank);
         POKE(horizontalRegister_M0, m0LastHorizontalLocation);
         POKE(missileAddress+m0LastVerticalLocation, 2);
-        traverseMissile(p0Direction, m0LastHorizontalLocation, m0LastVerticalLocation, tank);
+        //traverseMissile(p0Direction, m0LastHorizontalLocation, m0LastVerticalLocation, tank);
     }
     else if (tank == 1)
     {
@@ -736,7 +755,7 @@ void fire(int tank){
         missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, tank);
         POKE(horizontalRegister_M1, m1LastHorizontalLocation);
         POKE(missileAddress+m1LastVerticalLocation, 8);
-        traverseMissile(p1Direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
+        //traverseMissile(p1Direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
     }
 }
 
