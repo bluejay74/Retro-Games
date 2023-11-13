@@ -70,7 +70,7 @@ unsigned int tankPics[16][8] = {
 };
 
 int i;
-
+int frameDelayCounter = 0;
 //Adresses
 int bitMapAddress;
 int PMBaseAddress;
@@ -92,6 +92,8 @@ unsigned int p0Direction = EAST;
 unsigned int p1Direction = WEST;
 unsigned char p0LastMove;
 unsigned char p1LastMove;
+unsigned char p0history;
+unsigned char p1history;
 
 //Starting vertical and horizontal position of players 
 const int verticalStartP0 = 131;
@@ -145,7 +147,17 @@ int main() {
     setUpTankDisplay();
 
     while (true) {
-        movePlayers();
+        //Slows down character movement e.g. (60fps/5) = 12moves/second (it is actually slower than this for some reason)
+        if (frameDelayCounter == 5){
+            movePlayers();
+            frameDelayCounter = 0;
+        }else{
+            frameDelayCounter++;
+        }
+        checkCollision();
+        p1history = p1LastMove; //helps to fix collision bug
+        p0history = p0LastMove; //helps to fix collision bug
+        waitvsync();
     }
     return 0;
 }
@@ -415,7 +427,7 @@ void updateplayerDir(int player){
     }
 
     //checking to see if the movement caused a collision, is it needed here?
-    checkCollision();
+    //checkCollision();
 }
 
 //move the tank forward
@@ -703,17 +715,21 @@ void moveBackward(int tank){
 
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
-    if(PEEK(P1PF) != 0x00){
-        if(JOY_UP(p1LastMove)){
-            POKE(HITCLR, 1);
+    if(PEEK(P1PF) != 0x0000){
+        if(JOY_UP(p1history)){
+            moveBackward(2);
+            moveBackward(2);
+            moveBackward(2);
             moveBackward(2);
         }
-        if(JOY_DOWN(p1LastMove)){
-            POKE(HITCLR, 1);
+        else if(JOY_DOWN(p1history)){
+            moveForward(2);
+            moveForward(2);
+            moveForward(2);
             moveForward(2);
         }
     }
-
+    POKE(HITCLR, 1); // Clear ALL of the Collision Registers
 }
 
 //fire a projectile from the tank
