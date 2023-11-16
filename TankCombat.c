@@ -296,8 +296,7 @@ void createBitMap() {
 
 void enablePMGraphics() {
     POKE(0x22F, 62);                    //Enable Player-Missile DMA single line
-    //PMBaseAddress = PEEK(0x6A)-8;       //Get Player-Missile base address
-    PMBaseAddress = 0x2800;
+    PMBaseAddress = 0x2800;             //the player-missile base address
     POKE(0xD407, PMBaseAddress);        //Store Player-Missile base address in base register
     POKE(0xD01D, 3);                    //Enable Player-Missile DMA
 
@@ -348,6 +347,7 @@ void movePlayers(){
     p0LastMove = player0move;
     p1LastMove = player1move;
 
+    //moving player 1
     if(JOY_BTN_1(player0move)) fire(0);
     else if(JOY_UP(player0move)) moveForward(0);
     else if(JOY_DOWN(player0move)) moveBackward(0);
@@ -439,8 +439,6 @@ void updateplayerDir(int player){
         }
     }
 
-    //checking to see if the movement caused a collision, is it needed here?
-    //checkCollision();
 }
 
 //move the tank forward
