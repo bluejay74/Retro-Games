@@ -5,6 +5,10 @@
     Compiler: CC65 Cross Compiler
    -------------------------------------------------------------------
 */
+//Code Key: Player 1 = P0
+//          Player 2 = P1
+
+
 
 #include <atari.h>
 #include <_antic.h>
@@ -339,27 +343,27 @@ void setUpTankDisplay() {
 //moving based off of joystick input, or firing the tank if the player chooses
 void movePlayers(){
     //joystick code
-    unsigned char player1move = joy_read(JOY_1);
-    unsigned char player2move = joy_read(JOY_2);
-    p0LastMove = player1move;
-    p1LastMove = player2move;
+    unsigned char player0move = joy_read(JOY_1);
+    unsigned char player1move = joy_read(JOY_2);
+    p0LastMove = player0move;
+    p1LastMove = player1move;
 
+    if(JOY_BTN_1(player0move)) fire(0);
+    else if(JOY_UP(player0move)) moveForward(0);
+    else if(JOY_DOWN(player0move)) moveBackward(0);
+    else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
+
+    //moving player 2
     if(JOY_BTN_1(player1move)) fire(1);
     else if(JOY_UP(player1move)) moveForward(1);
     else if(JOY_DOWN(player1move)) moveBackward(1);
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
-
-    //moving player 2
-    if(JOY_BTN_1(player2move)) fire(2);
-    else if(JOY_UP(player2move)) moveForward(2);
-    else if(JOY_DOWN(player2move)) moveBackward(2);
-    else if(JOY_LEFT(player2move) || JOY_RIGHT(player2move)) turnplayer(player2move, 2);
 }
 
 //rotating the player
 void turnplayer(unsigned char turn, int player){
     //for player 1
-    if(player == 1){
+    if(player == 0){
         //handling edge cases
         if(p0Direction == WEST_60 && JOY_RIGHT(turn)){
             p0Direction = NORTH;
@@ -375,10 +379,10 @@ void turnplayer(unsigned char turn, int player){
         else if(JOY_RIGHT(turn)){
             p0Direction = p0Direction + 1;
         }
-        updateplayerDir(1);
+        updateplayerDir(0);
     }
     //for player 2
-    else if(player == 2){
+    else if(player == 1){
         if(p1Direction == WEST_60 && JOY_RIGHT(turn)){
             p1Direction = NORTH;
         }
@@ -393,14 +397,14 @@ void turnplayer(unsigned char turn, int player){
         else if(JOY_RIGHT(turn)){
             p1Direction = p1Direction + 1;
         }
-        updateplayerDir(2);
+        updateplayerDir(1);
     }
 }
 
 //updating the player's orientation, or position
 void updateplayerDir(int player){
     //updating player 1
-    if(player == 1){
+    if(player == 0){
         if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH){
             int counter = 7;
             for(i = p0VerticalLocation; i < p0VerticalLocation + 8; i++){
@@ -418,7 +422,7 @@ void updateplayerDir(int player){
     }
 
     //updating player 2
-    else if(player == 2){
+    else if(player == 1){
         if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH){
             int counter = 7;
             for(i = p1VerticalLocation; i < p1VerticalLocation + 8; i++){
@@ -442,7 +446,7 @@ void updateplayerDir(int player){
 //move the tank forward
 void moveForward(int tank){
     //moving forward tank 1--------------------------------
-    if(tank == 1){
+    if(tank == 0){
         //movement for north
         if(p0Direction == NORTH){
             POKE(playerAddress+(p0VerticalLocation+7), 0);
@@ -472,7 +476,6 @@ void moveForward(int tank){
             POKE(playerAddress+(p0VerticalLocation +7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
-            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement south-ish cases
@@ -493,7 +496,6 @@ void moveForward(int tank){
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation +1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
-            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement west
@@ -506,13 +508,13 @@ void moveForward(int tank){
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
-        updateplayerDir(1);
+        updateplayerDir(0);
     }
 
 
 
     //moving forward tank 2------------------------------
-    else if(tank == 2){
+    else if(tank == 1){
         //movement for north
         if(p1Direction == NORTH){
             POKE(playerAddress+(p1VerticalLocation+7), 0);
@@ -542,7 +544,6 @@ void moveForward(int tank){
             POKE(playerAddress+(p1VerticalLocation +7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
-            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement south-ish cases
@@ -563,7 +564,6 @@ void moveForward(int tank){
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation +1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
-            //updateplayerDir(1);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement west
@@ -576,7 +576,7 @@ void moveForward(int tank){
             p1HorizontalLocation++;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
-        updateplayerDir(2);
+        updateplayerDir(1);
     }
 }
 
@@ -585,7 +585,7 @@ void moveForward(int tank){
 //move the tank backward
 void moveBackward(int tank){
     //moving backward tank 1-------------------------------
-    if(tank == 1){
+    if(tank == 0){
         //movement for north
         if(p0Direction == NORTH){
             POKE(playerAddress+p0VerticalLocation, 0);
@@ -614,7 +614,6 @@ void moveBackward(int tank){
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation + 1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
-            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
 
         }
@@ -636,7 +635,6 @@ void moveBackward(int tank){
             POKE(playerAddress+(p0VerticalLocation + 7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
-            //updateplayerDir(1);
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
         //movement west
@@ -649,12 +647,12 @@ void moveBackward(int tank){
             p0HorizontalLocation--;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
-        updateplayerDir(1);
+        updateplayerDir(0);
     }
 
 
     //moving backward tank 2-------------------------------
-    if(tank == 2){
+    if(tank == 1){
         //movement for north
         if(p1Direction == NORTH){
             POKE(playerAddress+p1VerticalLocation, 0);
@@ -683,7 +681,6 @@ void moveBackward(int tank){
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation + 1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
-            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
 
         }
@@ -705,7 +702,6 @@ void moveBackward(int tank){
             POKE(playerAddress+(p1VerticalLocation + 7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
-            //updateplayerDir(2);
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
         //movement west
@@ -718,7 +714,7 @@ void moveBackward(int tank){
             p1HorizontalLocation--;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
-        updateplayerDir(2);
+        updateplayerDir(1);
     }
 }
 
@@ -726,16 +722,16 @@ void moveBackward(int tank){
 void checkCollision(){
     if(PEEK(P1PF) != 0x0000){
         if(JOY_UP(p1history)){
-            moveBackward(2);
-            moveBackward(2);
-            moveBackward(2);
-            moveBackward(2);
+            moveBackward(1);
+            moveBackward(1);
+            moveBackward(1);
+            moveBackward(1);
         }
         else if(JOY_DOWN(p1history)){
-            moveForward(2);
-            moveForward(2);
-            moveForward(2);
-            moveForward(2);
+            moveForward(1);
+            moveForward(1);
+            moveForward(1);
+            moveForward(1);
         }
     }
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
