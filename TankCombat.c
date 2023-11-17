@@ -117,6 +117,11 @@ int m0LastVerticalLocation;
 int m1LastHorizontalLocation;
 int m1LastVerticalLocation;
 
+int m0direction;
+int m1direction;
+
+bool m0exists = false;
+bool m1exists = false;
 
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
@@ -131,7 +136,7 @@ void setUpTankDisplay();
 void movePlayers();
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
-void traverseMissile(unsigned int tankDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
+void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
 void moveForward(int tank);
 void moveBackward(int tank);
 void checkCollision();
@@ -165,6 +170,12 @@ int main() {
         checkCollision();
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
+        if (m0exists == true){
+            traverseMissile(m0direction, m0LastHorizontalLocation, m0LastVerticalLocation, 0);
+        }
+        if (m1exists == true){
+            traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
+        }
         waitvsync();
     }
     return 0;
@@ -743,6 +754,7 @@ void fire(int tank){
         missileLocationHelper(p0Direction, p0HorizontalLocation, p0VerticalLocation, tank);
         POKE(horizontalRegister_M0, m0LastHorizontalLocation);
         POKE(missileAddress+m0LastVerticalLocation, 2);
+        m0exists = true; //missile exists until colliding
         //traverseMissile(p0Direction, m0LastHorizontalLocation, m0LastVerticalLocation, tank);
     }
     else if (tank == 1)
@@ -751,6 +763,7 @@ void fire(int tank){
         missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, tank);
         POKE(horizontalRegister_M1, m1LastHorizontalLocation);
         POKE(missileAddress+m1LastVerticalLocation, 8);
+        m1exists = true; //missile exists until colliding
         //traverseMissile(p1Direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
     }
 }
@@ -759,6 +772,7 @@ void fire(int tank){
 //sets up the missile to be located at the tank's barrel
 void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank)
 { 
+    int mdirection;
     int mLastHorizontalLocation = 0;
     int mLastVerticalLocation = 0;
 
@@ -766,81 +780,97 @@ void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, 
     {
         mLastHorizontalLocation = pHorizontalLocation+4;
         mLastVerticalLocation = pVerticalLocation;
+        mdirection = NORTH;
     }
     else if (tankDirection == NORTH_15)
     {
         mLastHorizontalLocation = pHorizontalLocation+5;
         mLastVerticalLocation = pVerticalLocation;
+        mdirection = NORTH_15;
     }
     else if (tankDirection == NORTH_EAST)
     {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation;
+        mdirection = NORTH_EAST;
     }
     else if (tankDirection == NORTH_60)
     {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+2;
+        mdirection = NORTH_60;
     }
     else if (tankDirection == EAST)
     {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+4;
+        mdirection = EAST;
     }
     else if (tankDirection == EAST_15)
     {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+5;
+        mdirection = EAST_15;
     }
     else if (tankDirection == EAST_SOUTH)
     {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+7;
+        mdirection = EAST_SOUTH;
     }
     else if (tankDirection == EAST_60)
     {
         mLastHorizontalLocation = pHorizontalLocation+5;
         mLastVerticalLocation = pVerticalLocation+7;
+        mdirection = EAST_60;
     }
     else if (tankDirection == SOUTH)
     {
         mLastHorizontalLocation = pHorizontalLocation+4;
         mLastVerticalLocation = pVerticalLocation+7;
+        mdirection = SOUTH;
     }
     else if (tankDirection == SOUTH_15)
     {
         mLastHorizontalLocation = pHorizontalLocation+2;
         mLastVerticalLocation = pVerticalLocation+7;
+        mdirection = SOUTH_15;
     }
     else if (tankDirection == SOUTH_WEST)
     {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+7;
+        mdirection = SOUTH_WEST;
     }
     else if (tankDirection == SOUTH_60)
     {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+5;
+        mdirection = SOUTH_60;
     }
     else if (tankDirection == WEST)
     {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+4;
+        mdirection = WEST;
     }
     else if (tankDirection == WEST_15)
     {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+2;
+        mdirection = WEST_15;
     }
     else if (tankDirection == WEST_NORTH)
     {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation;
+        mdirection = WEST_NORTH;
     }
     else if (tankDirection == WEST_60)
     {
         mLastHorizontalLocation = pHorizontalLocation+2;
         mLastVerticalLocation = pVerticalLocation+2;
+        mdirection = WEST_60;
     }
 
     //Update missile location based on which player is being passed in
@@ -848,97 +878,93 @@ void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, 
     {
         m0LastHorizontalLocation = mLastHorizontalLocation;
         m0LastVerticalLocation = mLastVerticalLocation;
+        m0direction = mdirection;
     }
     else if (tank == 1)
     {
         m1LastHorizontalLocation = mLastHorizontalLocation;
         m1LastVerticalLocation = mLastVerticalLocation - 256;
+        m1direction = mdirection;
     }      
 }
 
 //This function is to poke and start the animation, moving the missile until collision is true
-void traverseMissile(unsigned int tankDirection, int mHorizontalLocation, int mVerticalLocation, int tank)
-{
-    int counter = 0;
-
-    while (counter <= 75) // Change While condition so that it breaks when collision is true
-    {
-        counter++;
-        
+void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank)
+{    
         POKE(missileAddress+mVerticalLocation, 0);
 
-        if (tankDirection == NORTH)
+        if (missileDirection == NORTH)
         {
             mVerticalLocation--;
         }
-        else if (tankDirection == NORTH_15)
+        else if (missileDirection == NORTH_15)
         {
             mVerticalLocation -= 2;
             mHorizontalLocation++;
         } 
-        else if (tankDirection == NORTH_EAST)
+        else if (missileDirection == NORTH_EAST)
         {
             mVerticalLocation--;
             mHorizontalLocation++;              
         }
-        else if (tankDirection == NORTH_60)
+        else if (missileDirection == NORTH_60)
         {
             mVerticalLocation--;
             mHorizontalLocation += 2;
         } 
-        else if (tankDirection == EAST)
+        else if (missileDirection == EAST)
         {
             mHorizontalLocation++;
         } 
-        else if (tankDirection == EAST_15)
+        else if (missileDirection == EAST_15)
         {
             mVerticalLocation++;
             mHorizontalLocation += 2;
         }
-        else if (tankDirection == EAST_SOUTH)
+        else if (missileDirection == EAST_SOUTH)
         {
             mVerticalLocation++;
             mHorizontalLocation++;
         }
-        else if (tankDirection == EAST_60)
+        else if (missileDirection == EAST_60)
         {
             mVerticalLocation += 2;
             mHorizontalLocation++;
         }
-        else if (tankDirection == SOUTH)
+        else if (missileDirection == SOUTH)
         {
             mVerticalLocation++;
         }
-        else if (tankDirection == SOUTH_15)
+        else if (missileDirection == SOUTH_15)
         {
             mVerticalLocation += 2;
             mHorizontalLocation--;
         }
-        else if (tankDirection == SOUTH_WEST)
+        else if (missileDirection == SOUTH_WEST)
         {
             mVerticalLocation++;
             mHorizontalLocation--;
         }
-        else if (tankDirection == SOUTH_60)
+        else if (missileDirection == SOUTH_60)
         {
             mVerticalLocation++;
             mHorizontalLocation -= 2;
         }
-        else if (tankDirection == WEST)
+        else if (missileDirection == WEST)
         {
             mHorizontalLocation--;
         }
-        else if (tankDirection == WEST_15)
+        else if (missileDirection == WEST_15)
         {
             mVerticalLocation--;
             mHorizontalLocation -= 2;
         }
-        else if (tankDirection == WEST_NORTH)
+        else if (missileDirection == WEST_NORTH)
         {
             mVerticalLocation--;
             mHorizontalLocation--;
         }
-        else if (tankDirection == WEST_60)
+        else if (missileDirection == WEST_60)
         {
             mVerticalLocation -= 2;
             mHorizontalLocation--;
@@ -949,18 +975,14 @@ void traverseMissile(unsigned int tankDirection, int mHorizontalLocation, int mV
         {
             POKE(horizontalRegister_M0, mHorizontalLocation);
             POKE(missileAddress+mVerticalLocation, 2);
+            m0LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
+            m0LastVerticalLocation = mVerticalLocation; //saving new location to global variables
         }
         else if (tank == 1)
         {
             POKE(horizontalRegister_M1, mHorizontalLocation);
             POKE(missileAddress+mVerticalLocation, 8);
+            m1LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
+            m1LastVerticalLocation = mVerticalLocation; //saving new location to global variables
         }
-
-        for (i = 0; i < 1000; i++) {
-            // This loop does nothing and consumes time slows down the missile
-        }
-    }
-
-    //While loop breaks when collision is true. If there is collision you would want to make sure that missile would not appear anymore
-    POKE(missileAddress+mVerticalLocation, 0);
 }
