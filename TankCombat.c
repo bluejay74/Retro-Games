@@ -140,15 +140,13 @@ void setUpTankDisplay();
 void movePlayers();
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
-void traverseMissile();
+void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
 void moveForward(int tank);
 void moveBackward(int tank);
 void checkCollision();
 //functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
 void updateplayerDir(int player);
-//keeping track of live missiles
-bool missileLive[2] = {false, false};
 
 
 /*
