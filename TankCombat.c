@@ -124,8 +124,11 @@ bool m0exists = false;
 bool m1exists = false;
 
 //scores
-unsigned char p0Score = '0';
-unsigned char p1Score = '0';
+char *p0Score = "0";
+char *p1Score = "0";
+int scoreArrayP0Tracker = 0;
+int scoreArrayP1Tracker = 0;
+const char *scoreArray[10] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
 
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
@@ -242,8 +245,8 @@ void initializeScore() {
     POKE(0x58,224);
     POKE(0X59,156);
     POKE(0X57,2);
-    cputsxy(5, 0, p0Score);
-    cputsxy(14, 0, p1Score);
+    cputsxy(5, 0, "0");
+    cputsxy(14, 0, "0");
 }
 
 void updatePlayerScore(){
@@ -368,13 +371,13 @@ void movePlayers(){
     p1LastMove = player1move;
 
     //moving player 1
-    if(JOY_BTN_1(player0move)) fire(0);
+    if(JOY_BTN_1(player0move) && m0exists == false) fire(0);
     else if(JOY_UP(player0move)) moveForward(0);
     else if(JOY_DOWN(player0move)) moveBackward(0);
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
 
     //moving player 2
-    if(JOY_BTN_1(player1move)) fire(1);
+    if(JOY_BTN_1(player1move) && m1exists == false) fire(1);
     else if(JOY_UP(player1move)) moveForward(1);
     else if(JOY_DOWN(player1move)) moveBackward(1);
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
@@ -782,15 +785,17 @@ void checkCollision(){
     if(PEEK(M1P) != 0x0000){
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
-        p1Score = p1Score + 1;
+        p1Score = scoreArray[scoreArrayP1Tracker];
         updatePlayerScore();
+        scoreArrayP1Tracker += 1;
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
-        p0Score = p0Score + 1;
+        p0Score = scoreArray[scoreArrayP0Tracker];
         updatePlayerScore();
+        scoreArrayP0Tracker += 1;
     }
 
 
