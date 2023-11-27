@@ -168,16 +168,16 @@ int main() {
 
     while (true) {
         //Slows down character movement e.g. (60fps/5) = 12moves/second (it is actually slower than this for some reason)
-        if (frameDelayCounter == 5) {
+        if (frameDelayCounter == 5){
             movePlayers();
             frameDelayCounter = 0;
-        } else {
+        }else{
             frameDelayCounter++;
         }
-        if (m0exists == true) {
+        if (m0exists == true){
             traverseMissile(m0direction, m0LastHorizontalLocation, m0LastVerticalLocation, 0);
         }
-        if (m1exists == true) {
+        if (m1exists == true){
             traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
         }
         checkCollision();
@@ -601,6 +601,8 @@ void moveForward(int tank){
     }
 }
 
+
+
 //move the tank backward
 void moveBackward(int tank){
     //moving backward tank 1-------------------------------
@@ -795,6 +797,7 @@ void checkCollision(){
         updatePlayerScore();
         scoreArrayP0Tracker += 1;
     }
+
 
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
 }
@@ -1020,6 +1023,7 @@ void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int
         mVerticalLocation -= 2;
         mHorizontalLocation--;
     }
+
 
     if (tank == 0)
     {
