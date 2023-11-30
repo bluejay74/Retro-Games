@@ -8,8 +8,6 @@
 //Code Key: Player 1 = P0
 //          Player 2 = P1
 
-
-
 #include <atari.h>
 #include <_antic.h>
 #include <_atarios.h>
@@ -37,6 +35,7 @@
 #define WEST_15             13
 #define WEST_NORTH          14
 #define WEST_60             15
+
 
 
 //collision detection definitions, add all registers
@@ -150,7 +149,8 @@ void checkCollision();
 //functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
 void updateplayerDir(int player);
-
+void spawnPlayer(int player);
+void rotateAI();
 
 /*
  * <-------------------- DRIVER MAIN --------------------> 
@@ -183,11 +183,17 @@ int main() {
         checkCollision();
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
+
+        // if (scoreArrayP0Tracker == 9 || scoreArrayP1Tracker == 9)
+        // {
+        //     cputsxy(5, 0, "Game Over");
+        //     //break;
+        // }
         waitvsync();
     }
+
     return 0;
 }
-
 
 /*
  * <-------------------- FUNCTION IMPLEMENTATIONS --------------------> 
@@ -600,8 +606,6 @@ void moveForward(int tank){
         updateplayerDir(1);
     }
 }
-
-
 
 //move the tank backward
 void moveBackward(int tank){
@@ -1027,16 +1031,35 @@ void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int
 
     if (tank == 0)
     {
-        POKE(horizontalRegister_M0, mHorizontalLocation);
-        POKE(missileAddress+mVerticalLocation, 2);
         m0LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m0LastVerticalLocation = mVerticalLocation; //saving new location to global variables
+        
+        POKE(horizontalRegister_M0, mHorizontalLocation);
+
+        if (m0LastVerticalLocation == m1LastVerticalLocation && m1exists == true)
+        {
+            POKE(missileAddress+mVerticalLocation, 10);
+        }
+        else
+        {
+            POKE(missileAddress+mVerticalLocation, 2);
+        }
     }
     else if (tank == 1)
     {
-        POKE(horizontalRegister_M1, mHorizontalLocation);
-        POKE(missileAddress+mVerticalLocation, 8);
         m1LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m1LastVerticalLocation = mVerticalLocation; //saving new location to global variables
+
+        POKE(horizontalRegister_M1, mHorizontalLocation);
+
+        if (m1LastVerticalLocation == m0LastVerticalLocation && m0exists == true)
+        {
+            POKE(missileAddress+mVerticalLocation, 10);
+        }
+        else
+        {
+            POKE(missileAddress+mVerticalLocation, 8);
+        }
     }
 }
+
