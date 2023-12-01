@@ -123,6 +123,13 @@ int m1direction;
 bool m0exists = false;
 bool m1exists = false;
 
+//tank hit variables
+bool p0IsHit = false;
+bool p1IsHit = false;
+int p0HitDir = 0;
+int p1HitDir = 0;
+int hitTime[2] = {0, 0};
+
 //scores
 char *p0Score = "0";
 char *p1Score = "0";
@@ -139,7 +146,7 @@ void initializeScore();
 void createBitMap();
 void enablePMGraphics();
 void setUpTankDisplay();
-
+void spinTank(int tank);
 void movePlayers();
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
@@ -171,6 +178,9 @@ int main() {
         if (frameDelayCounter == 5){
             movePlayers();
             frameDelayCounter = 0;
+            //if either of the players are hit, spin and move them, rather than letting them fire or move
+            if(p0IsHit && hitTime[0] > 0) spinTank(0);
+            if(p1IsHit && hitTime[1] > 0) spinTank(1);
         }else{
             frameDelayCounter++;
         }
@@ -180,6 +190,7 @@ int main() {
         if (m1exists == true){
             traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
         }
+
         checkCollision();
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
@@ -370,17 +381,17 @@ void movePlayers(){
     p0LastMove = player0move;
     p1LastMove = player1move;
 
-    //moving player 1
-    if(JOY_BTN_1(player0move) && m0exists == false) fire(0);
-    else if(JOY_UP(player0move)) moveForward(0);
-    else if(JOY_DOWN(player0move)) moveBackward(0);
-    else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
+    //moving player 1, only if they are not hit
+    if(JOY_BTN_1(player0move) && m0exists == false && !p0IsHit) fire(0);
+    else if(JOY_UP(player0move) && !p0IsHit) moveForward(0);
+    else if(JOY_DOWN(player0move) && !p0IsHit) moveBackward(0);
+    else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move) && !p0IsHit) turnplayer(player0move, 0);
 
-    //moving player 2
-    if(JOY_BTN_1(player1move) && m1exists == false) fire(1);
-    else if(JOY_UP(player1move)) moveForward(1);
-    else if(JOY_DOWN(player1move)) moveBackward(1);
-    else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
+    //moving player 2, only if they are not hit
+    if(JOY_BTN_1(player1move) && m1exists == false && !p1IsHit) fire(1);
+    else if(JOY_UP(player1move) && !p1IsHit) moveForward(1);
+    else if(JOY_DOWN(player1move) && !p1IsHit) moveBackward(1);
+    else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move) && !p1IsHit) turnplayer(player1move, 1);
 }
 
 //rotating the player
@@ -739,6 +750,46 @@ void moveBackward(int tank){
     }
 }
 
+void spinTank(int tank){
+    if(tank == 0){
+        if(p0HitDir == NORTH || p0HitDir == NORTH_15 || p0HitDir == NORTH_60 || p0HitDir == NORTH_EAST || p0HitDir == EAST || p0HitDir == EAST_15 || p0HitDir == EAST_60 || p0HitDir == EAST_SOUTH){
+            p0HorizontalLocation++;
+            POKE(horizontalRegister_P0, p0HorizontalLocation);
+            if(p0Direction == WEST_60) p0Direction = NORTH;
+            else p0Direction = p0Direction + 1;
+            updateplayerDir(0);
+        }
+        if(p0HitDir == SOUTH || p0HitDir == SOUTH_60 || p0HitDir == SOUTH_15 || p0HitDir == SOUTH_WEST || p0HitDir == WEST || p0HitDir == WEST_15 || p0HitDir == WEST_60 || p0HitDir == WEST_NORTH){
+            p0HorizontalLocation--;
+            POKE(horizontalRegister_P0, p0HorizontalLocation);
+            if(p0Direction == NORTH) p0Direction = WEST_60;
+            else p0Direction = p0Direction - 1;
+            updateplayerDir(0);
+        }
+        hitTime[0] = hitTime[0] - 1;
+        if(hitTime[0] == 0) p0IsHit = false;
+    }
+    if(tank == 1){
+        if(p1HitDir == NORTH || p1HitDir == NORTH_15 || p1HitDir == NORTH_60 || p1HitDir == NORTH_EAST || p1HitDir == EAST || p1HitDir == EAST_15 || p1HitDir == EAST_60 || p1HitDir == EAST_SOUTH){
+            p1HorizontalLocation++;
+            POKE(horizontalRegister_P1, p1HorizontalLocation);
+            if(p1Direction == WEST_60) p1Direction = NORTH;
+            else p1Direction = p1Direction + 1;
+            updateplayerDir(1);
+        }
+        if(p1HitDir == SOUTH || p1HitDir == SOUTH_60 || p1HitDir == SOUTH_15 || p1HitDir == SOUTH_WEST || p1HitDir == WEST || p1HitDir == WEST_15 || p1HitDir == WEST_60 || p1HitDir == WEST_NORTH){
+            p1HorizontalLocation--;
+            POKE(horizontalRegister_P1, p1HorizontalLocation);
+            if(p1Direction == NORTH) p1Direction = WEST_60;
+            else p1Direction = p1Direction - 1;
+            updateplayerDir(1);
+        }
+        hitTime[1] = hitTime[1] - 1;
+        if(hitTime[1] == 0) p1IsHit = false;
+    }
+    checkCollision();
+}
+
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
     //checking for player 2 to playfield collision
@@ -783,19 +834,25 @@ void checkCollision(){
     }
     //checking for missile1 to player collision
     if(PEEK(M1P) != 0x0000){
+        p0HitDir = m1direction;
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
         p1Score = scoreArray[scoreArrayP1Tracker];
         updatePlayerScore();
         scoreArrayP1Tracker += 1;
+        p0IsHit = true;
+        hitTime[0] = 12;
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
+        p1HitDir = m0direction;
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
         p0Score = scoreArray[scoreArrayP0Tracker];
         updatePlayerScore();
         scoreArrayP0Tracker += 1;
+        p1IsHit = true;
+        hitTime[1] = 12;
     }
 
 
