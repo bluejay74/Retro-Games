@@ -76,6 +76,7 @@ int i;
 int frameDelayCounter = 0;
 //Adresses
 int bitMapAddress;
+int charMapAddress;
 int PMBaseAddress;
 int playerAddress;
 int missileAddress;
@@ -123,11 +124,8 @@ bool m0exists = false;
 bool m1exists = false;
 
 //scores
-char *p0Score = "0";
-char *p1Score = "0";
-int scoreArrayP0Tracker = 0;
-int scoreArrayP1Tracker = 0;
-const char *scoreArray[10] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
+int p0Score = 16;
+int p1Score = 16;
 
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
@@ -209,9 +207,9 @@ void rearrangingDisplayList() {
         DL_BLK8,
         DL_BLK8,
         DL_LMS(DL_CHR20x16x2), 
-        0xE0, 0x9C,  // Text Memory 
+        0xE0, 0x9C,  // Charcater Memory 
         DL_LMS(DL_MAP40x8x4),
-        0x70,0x9E,  //Screen memory
+        0xF4,0x9C,  //Screen memory
         DL_MAP40x8x4,
         DL_MAP40x8x4,
         DL_MAP40x8x4,
@@ -244,20 +242,18 @@ void rearrangingDisplayList() {
     }
 
     bitMapAddress = PEEK(DLIST+7) + PEEK(DLIST+8)*256;
+    charMapAddress = PEEK(DLIST+4) + PEEK(DLIST+5)*256;
 }
 
 void initializeScore() {
     //Temp code
-    POKE(0x58,224);
-    POKE(0X59,156);
-    POKE(0X57,2);
-    cputsxy(5, 0, "0");
-    cputsxy(14, 0, "0");
+    POKE(charMapAddress + 5, 16);
+    POKE(charMapAddress + 14, 16);
 }
 
-void updatePlayerScore(){
-    cputsxy(5, 0, p0Score);
-    cputsxy(14, 0, p1Score);
+void updatePlayerScore() {
+    POKE(charMapAddress + 5, p0Score);
+    POKE(charMapAddress + 14, p1Score);
 }
 
 void createBitMap() {
@@ -329,14 +325,14 @@ void enablePMGraphics() {
     POKE(0xD407, PMBaseAddress);        //Store Player-Missile base address in base register
     POKE(0xD01D, 3);                    //Enable Player-Missile DMA
 
-    //Clear up Player Missile Character
     playerAddress = (PMBaseAddress * 256) + 1024;
     missileAddress = (PMBaseAddress * 256) + 768;
     
     //Clear up default built-in characters in Player's address
-    for (i = 0; i < 512; i++) {
+    for (i = 0; i <= 512; i++) {
         POKE(playerAddress + i, 0);
 
+        //Clear up built in characters in Missile's address
         if (i <= 256)
         {
             POKE(missileAddress + i, 0);
@@ -349,7 +345,7 @@ void setUpTankDisplay() {
 
     //Set up player 0 tank 
     POKE(horizontalRegister_P0, 57);
-    POKE(colLumPM0, 196);
+    POKE(colLumPM0, 202);
 
     for (i = 131; i < 139; i++) {
         POKE(playerAddress+i, tankPics[EAST][counter]);
@@ -359,7 +355,7 @@ void setUpTankDisplay() {
 
     //Set up player 1 tank
     POKE(horizontalRegister_P1, 190);
-    POKE(colLumPM1, 116);
+    POKE(colLumPM1, 40);
 
     for (i = 387; i < 395; i++) {
         POKE(playerAddress+i, tankPics[WEST][counter]);
@@ -789,19 +785,16 @@ void checkCollision(){
     if(PEEK(M1P) != 0x0000){
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
-        p1Score = scoreArray[scoreArrayP1Tracker];
+        p1Score += 1;
         updatePlayerScore();
-        scoreArrayP1Tracker += 1;
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
-        p0Score = scoreArray[scoreArrayP0Tracker];
+        p0Score += 1;
         updatePlayerScore();
-        scoreArrayP0Tracker += 1;
     }
-
 
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
 }
