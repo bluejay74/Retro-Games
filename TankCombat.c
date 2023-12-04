@@ -750,20 +750,47 @@ void moveBackward(int tank){
     }
 }
 
+void checkBorders(){
+    //if they're too far to the left
+    bool movedLeft0 = false;
+    bool movedLeft1 = false;
+    if(p0HorizontalLocation <= 50 && p0IsHit){
+        movedLeft0 = true;
+        p0HorizontalLocation = 195;
+        POKE(horizontalRegister_P0, p0HorizontalLocation);
+    }
+    if(p1HorizontalLocation <= 50 && p1IsHit){
+        movedLeft1 = true;
+        p1HorizontalLocation = 195;
+        POKE(horizontalRegister_P1, p1HorizontalLocation);
+    }
+
+    //if they're too  far to the right
+    if(p0HorizontalLocation >= 195 && p0IsHit && !movedLeft0){
+        p0HorizontalLocation = 50;
+        POKE(horizontalRegister_P0, p0HorizontalLocation);
+    }
+    if(p1HorizontalLocation >= 195 && p1IsHit && !movedLeft1){
+        p1HorizontalLocation = 50;
+        POKE(horizontalRegister_P1, p1HorizontalLocation);
+    }
+
+}
+
 void spinTank(int tank){
     if(tank == 0){
         if(p0HitDir == NORTH || p0HitDir == NORTH_15 || p0HitDir == NORTH_60 || p0HitDir == NORTH_EAST || p0HitDir == EAST || p0HitDir == EAST_15 || p0HitDir == EAST_60 || p0HitDir == EAST_SOUTH){
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
-            if(p0Direction == WEST_60) p0Direction = NORTH;
-            else p0Direction = p0Direction + 1;
+            if(p0Direction == WEST_NORTH || p0Direction == WEST_60) p0Direction = NORTH;
+            else p0Direction = p0Direction + 2;
             updateplayerDir(0);
         }
         if(p0HitDir == SOUTH || p0HitDir == SOUTH_60 || p0HitDir == SOUTH_15 || p0HitDir == SOUTH_WEST || p0HitDir == WEST || p0HitDir == WEST_15 || p0HitDir == WEST_60 || p0HitDir == WEST_NORTH){
             p0HorizontalLocation--;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
-            if(p0Direction == NORTH) p0Direction = WEST_60;
-            else p0Direction = p0Direction - 1;
+            if(p0Direction == NORTH_15 || p0Direction == NORTH) p0Direction = WEST_60;
+            else p0Direction = p0Direction - 2;
             updateplayerDir(0);
         }
         hitTime[0] = hitTime[0] - 1;
@@ -773,21 +800,21 @@ void spinTank(int tank){
         if(p1HitDir == NORTH || p1HitDir == NORTH_15 || p1HitDir == NORTH_60 || p1HitDir == NORTH_EAST || p1HitDir == EAST || p1HitDir == EAST_15 || p1HitDir == EAST_60 || p1HitDir == EAST_SOUTH){
             p1HorizontalLocation++;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
-            if(p1Direction == WEST_60) p1Direction = NORTH;
-            else p1Direction = p1Direction + 1;
+            if(p1Direction == WEST_NORTH || p1Direction == WEST_60) p1Direction = NORTH;
+            else p1Direction = p1Direction + 2;
             updateplayerDir(1);
         }
         if(p1HitDir == SOUTH || p1HitDir == SOUTH_60 || p1HitDir == SOUTH_15 || p1HitDir == SOUTH_WEST || p1HitDir == WEST || p1HitDir == WEST_15 || p1HitDir == WEST_60 || p1HitDir == WEST_NORTH){
             p1HorizontalLocation--;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
-            if(p1Direction == NORTH) p1Direction = WEST_60;
-            else p1Direction = p1Direction - 1;
+            if(p1Direction == NORTH_15 || p1Direction == NORTH) p1Direction = WEST_60;
+            else p1Direction = p1Direction - 2;
             updateplayerDir(1);
         }
         hitTime[1] = hitTime[1] - 1;
         if(hitTime[1] == 0) p1IsHit = false;
     }
-    checkCollision();
+    checkBorders();
 }
 
 //add a check to the collision registers, and act if they're triggered (not finished)
