@@ -122,6 +122,10 @@ int m1direction;
 
 bool m0exists = false;
 bool m1exists = false;
+int p0FireDelayCounter = 0;
+int p1FireDelayCounter = 0;
+bool p0FireAvailable = true;
+bool p1FireAvailable = true;
 
 //scores
 int p0Score = 16;
@@ -172,6 +176,23 @@ int main() {
         }else{
             frameDelayCounter++;
         }
+
+        if (p0FireAvailable == false){ //start counter to limit p0 fire inputs
+            p0FireDelayCounter++;
+        }
+        if (p0FireDelayCounter >= 60){
+            p0FireAvailable = true;
+            p0FireDelayCounter = 0;
+        }
+        if (p1FireAvailable == false){ //start counter to limit p0 fire inputs
+            p1FireDelayCounter++;
+        }
+        if (p1FireDelayCounter >= 60){
+            p1FireAvailable = true;
+            p1FireDelayCounter = 0;
+        }
+
+
         if (m0exists == true){
             traverseMissile(m0direction, m0LastHorizontalLocation, m0LastVerticalLocation, 0);
         }
@@ -373,13 +394,13 @@ void movePlayers(){
     p1LastMove = player1move;
 
     //moving player 1
-    if(JOY_BTN_1(player0move) && m0exists == false) fire(0);
+    if(JOY_BTN_1(player0move) && p0FireAvailable == true)  fire(0);
     else if(JOY_UP(player0move)) moveForward(0);
     else if(JOY_DOWN(player0move)) moveBackward(0);
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
 
     //moving player 2
-    if(JOY_BTN_1(player1move) && m1exists == false) fire(1);
+    if(JOY_BTN_1(player1move) && p1FireAvailable == true) fire(1);
     else if(JOY_UP(player1move)) moveForward(1);
     else if(JOY_DOWN(player1move)) moveBackward(1);
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
@@ -741,7 +762,7 @@ void moveBackward(int tank){
 
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
-    //checking for player 2 to playfield collision
+    //checking for player 1 to playfield collision
     if(PEEK(P1PF) != 0x0000){
         if(JOY_UP(p1history)){
             moveBackward(1);
@@ -756,7 +777,7 @@ void checkCollision(){
             moveForward(1);
         }
     }
-    //checking for player 1 to playfield collision
+    //checking for player 0 to playfield collision
     if(PEEK(P0PF) != 0x0000){
         if(JOY_UP(p0history)){
             moveBackward(0);
@@ -765,18 +786,18 @@ void checkCollision(){
             moveBackward(0);
         }
         if(JOY_DOWN(p0history)){
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
         }
     }
-    //checking for missile (player 2) to playfield collision
+    //checking for missile (player 1) to playfield collision
     if(PEEK(M1PF) != 0x0000){
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
     }
-    //checking for missile (player 1) to playfield collision
+    //checking for missile (player 0) to playfield collision
     if(PEEK(M0PF) != 0x0000){
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
@@ -808,6 +829,7 @@ void fire(int tank){
         POKE(horizontalRegister_M0, m0LastHorizontalLocation);
         POKE(missileAddress+m0LastVerticalLocation, 2);
         m0exists = true; //missile exists until colliding
+        p0FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
     else if (tank == 1)
     {
@@ -816,10 +838,11 @@ void fire(int tank){
         POKE(horizontalRegister_M1, m1LastHorizontalLocation);
         POKE(missileAddress+m1LastVerticalLocation, 8);
         m1exists = true; //missile exists until colliding
+        p1FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
 }
 
-//This fucntion is just to determine where the missile should be poked at. It tracks the locations of the tank and
+//This function is just to determine where the missile should be poked at. It tracks the locations of the tank and
 //sets up the missile to be located at the tank's barrel
 void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank)
 {
