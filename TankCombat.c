@@ -130,28 +130,6 @@ bool p0Fired = false;
 bool p1Fired = false;
 
 //Variable to keep track of score and ending the game when finished
-
-int p0Score = 16;
-int p1Score = 16;
-bool gameOn = true;
-
-/*
- * <-------------------- FUNCTION DECLARATIONS --------------------> 
- */
-void rearrangingDisplayList();
-void initializeScore();
-void createBitMap();
-void enablePMGraphics();
-void setUpTankDisplay();
-void movePlayers();
-void fire(int tank);
-void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
-void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
-void moveForward(int tank);
-void moveBackward(int tank);
-void checkCollision();
-void tankExplosion();
-
 //functions to turn and update tank positions
 int *characterSetP0[8] = {
         (int*)0x0030,
@@ -175,6 +153,26 @@ int *characterSetP1[8] = {
         (int*)0x0001
 };
 
+int p0Score = 16;
+int p1Score = 16;
+bool gameOn = true;
+
+/*
+ * <-------------------- FUNCTION DECLARATIONS --------------------> 
+ */
+void rearrangingDisplayList();
+void initializeScore();
+void createBitMap();
+void enablePMGraphics();
+void setUpTankDisplay();
+void movePlayers();
+void fire(int tank);
+void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
+void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
+void moveForward(int tank);
+void moveBackward(int tank);
+void checkCollision();
+void tankExplosion();
 void turnplayer(unsigned char turn, int player);
 void updateplayerDir(int player);
 void rotateAI(); //TO BE IMPLEMENTED
@@ -878,17 +876,17 @@ void checkCollision(){
     if(PEEK(M1P) != 0x0000){
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
-        tankExplosion();
         p1Score += 1;
         updatePlayerScore();
+        tankExplosion();
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
-        tankExplosion();
         p0Score += 1;
         updatePlayerScore();
+        tankExplosion();
     }
 
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
