@@ -778,7 +778,7 @@ void checkBorders(){
     }
 
     //if they're too far up
-    if(p0VerticalLocation <= 50 && p0IsHit){
+    if(p0VerticalLocation <= 57 && p0IsHit){
         POKE(playerAddress+p0VerticalLocation, 0);
         POKE(playerAddress+(p0VerticalLocation + 1), 0);
         POKE(playerAddress+(p0VerticalLocation + 2), 0);
@@ -786,11 +786,12 @@ void checkBorders(){
         POKE(playerAddress+(p0VerticalLocation + 4), 0);
         POKE(playerAddress+(p0VerticalLocation + 5), 0);
         POKE(playerAddress+(p0VerticalLocation + 6), 0);
+        POKE(playerAddress+(p0VerticalLocation + 7), 0);
 
-        p0VerticalLocation = 195;
+        p0VerticalLocation = 207;
         movedup0 = true;
     }
-    if(p1VerticalLocation <= 50 && p1IsHit){
+    if(p1VerticalLocation <= 312 && p1IsHit){
         POKE(playerAddress+p1VerticalLocation, 0);
         POKE(playerAddress+(p1VerticalLocation + 1), 0);
         POKE(playerAddress+(p1VerticalLocation + 2), 0);
@@ -798,17 +799,40 @@ void checkBorders(){
         POKE(playerAddress+(p1VerticalLocation + 4), 0);
         POKE(playerAddress+(p1VerticalLocation + 5), 0);
         POKE(playerAddress+(p1VerticalLocation + 6), 0);
-
-        p1VerticalLocation = 195;
+        POKE(playerAddress+(p1VerticalLocation + 7), 0);
+        p1VerticalLocation = 464;
         movedup1 = true;
     }
 
+    //if they're too far down
+    if(p0VerticalLocation >= 207 && p0IsHit && !movedup0){
+        POKE(playerAddress+p0VerticalLocation, 0);
+        POKE(playerAddress+(p0VerticalLocation + 1), 0);
+        POKE(playerAddress+(p0VerticalLocation + 2), 0);
+        POKE(playerAddress+(p0VerticalLocation + 3), 0);
+        POKE(playerAddress+(p0VerticalLocation + 4), 0);
+        POKE(playerAddress+(p0VerticalLocation + 5), 0);
+        POKE(playerAddress+(p0VerticalLocation + 6), 0);
+        POKE(playerAddress+(p0VerticalLocation + 7), 0);
+        p0VerticalLocation = 57;
+    }
+    if(p1VerticalLocation >= 464 && p1IsHit && !movedup1){
+        POKE(playerAddress+p1VerticalLocation, 0);
+        POKE(playerAddress+(p1VerticalLocation + 1), 0);
+        POKE(playerAddress+(p1VerticalLocation + 2), 0);
+        POKE(playerAddress+(p1VerticalLocation + 3), 0);
+        POKE(playerAddress+(p1VerticalLocation + 4), 0);
+        POKE(playerAddress+(p1VerticalLocation + 5), 0);
+        POKE(playerAddress+(p1VerticalLocation + 6), 0);
+        POKE(playerAddress+(p1VerticalLocation + 7), 0);
+        p1VerticalLocation = 312;
+    }
 }
 
 void spinTank(int tank){
     if(tank == 0){
         //if the tank is hit from the north
-        if(p0HitDir == NORTH || p0HitDir == NORTH_15 || p0HitDir == NORTH_60 || p0HitDir == NORTH_EAST || p0HitDir == EAST || p0HitDir == EAST_15 || p0HitDir == EAST_60 || p0HitDir == EAST_SOUTH){
+        if(p0HitDir == NORTH || p0HitDir == NORTH_EAST || p0HitDir == EAST_60 || p0HitDir == NORTH_15){
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
             if(p0Direction == WEST_NORTH || p0Direction == WEST_60) p0Direction = NORTH;
@@ -816,7 +840,7 @@ void spinTank(int tank){
             updateplayerDir(0);
         }
         //if the tank is hit from the south
-        if(p0HitDir == SOUTH || p0HitDir == SOUTH_60 || p0HitDir == SOUTH_15 || p0HitDir == SOUTH_WEST || p0HitDir == WEST || p0HitDir == WEST_15 || p0HitDir == WEST_60 || p0HitDir == WEST_NORTH){
+        if(p0HitDir == SOUTH || p0HitDir == SOUTH_15 || p0HitDir == SOUTH_WEST || p0HitDir == WEST_60){
             //move right and spin
             p0HorizontalLocation--;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
@@ -827,18 +851,18 @@ void spinTank(int tank){
         //if the tank is hit from the west
         if(p0HitDir == WEST || p0HitDir == WEST_15 || p0HitDir == WEST_NORTH || p0HitDir == SOUTH_60){
             //move down and spin
-            POKE(playerAddress+p0VerticalLocation, 0);
-            p0VerticalLocation++;
             if(p0Direction == NORTH_15 || p0Direction == NORTH) p0Direction = WEST_60;
             else p0Direction = p0Direction - 2;
+            POKE(playerAddress+p0VerticalLocation, 0);
+            p0VerticalLocation++;
             updateplayerDir(0);
         }
         if(p0HitDir == EAST || p0HitDir == EAST_15 || p0HitDir == EAST_SOUTH || p0HitDir == NORTH_60){
             //move up and spin
-            POKE(playerAddress+p0VerticalLocation, 0);
-            p0VerticalLocation--;
             if(p0Direction == NORTH_15 || p0Direction == NORTH) p0Direction = WEST_60;
             else p0Direction = p0Direction - 2;
+            POKE(playerAddress+p0VerticalLocation+7, 0);
+            p0VerticalLocation--;
             updateplayerDir(0);
         }
 
@@ -871,7 +895,7 @@ void spinTank(int tank){
         }
         if(p1HitDir == EAST || p1HitDir == EAST_15 || p1HitDir == EAST_SOUTH || p1HitDir == NORTH_60){
             //move up and spin
-            POKE(playerAddress+p1VerticalLocation, 0);
+            POKE(playerAddress+p1VerticalLocation+7, 0);
             p1VerticalLocation--;
             if(p1Direction == NORTH_15 || p1Direction == NORTH) p1Direction = WEST_60;
             else p1Direction = p1Direction - 2;
@@ -913,10 +937,10 @@ void checkCollision(){
             moveBackward(0);
         }
         if(JOY_DOWN(p0history)){
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
         }
     }
     //checking for missile (player 2) to playfield collision
