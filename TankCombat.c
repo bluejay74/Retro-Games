@@ -72,8 +72,12 @@ unsigned int tankPics[16][8] = {
         {36,38,158,255,255,114,112,32}      //WEST_60
 };
 
+unsigned char j = 0;
+unsigned char m0SoundTracker = 0;
+unsigned char m1SoundTracker = 0;
 int i;
 int frameDelayCounter = 0;
+
 //Adresses
 int bitMapAddress;
 int charMapAddress;
@@ -120,6 +124,8 @@ int m1LastVerticalLocation;
 int m0direction;
 int m1direction;
 
+bool p0Fired = false;
+bool p1Fired = false;
 bool m0exists = false;
 bool m1exists = false;
 int p0FireDelayCounter = 0;
@@ -128,8 +134,32 @@ bool p0FireAvailable = true;
 bool p1FireAvailable = true;
 
 //scores
+//functions to turn and update tank positions
+int *characterSetP0[8] = {
+        (int*)0x0030,
+        (int*)0x0011,
+        (int*)0x0000,
+        (int*)0x0037,
+        (int*)0x0029,
+        (int*)0x002E,
+        (int*)0x0033,
+        (int*)0x0001
+};
+
+int *characterSetP1[8] = {
+        (int*)0x0030,
+        (int*)0x0012,
+        (int*)0x0000,
+        (int*)0x0037,
+        (int*)0x0029,
+        (int*)0x002E,
+        (int*)0x0033,
+        (int*)0x0001
+};
+
 int p0Score = 16;
 int p1Score = 16;
+bool gameOn = true;
 
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
@@ -150,6 +180,7 @@ void moveBackward(int tank);
 void checkCollision();
 //functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
+void tankExplosion();
 void updateplayerDir(int player);
 void spawnPlayer(int player);
 void rotateAI();
@@ -175,6 +206,38 @@ int main() {
             frameDelayCounter = 0;
         }else{
             frameDelayCounter++;
+        }
+
+        if (p0Fired == true)
+        {
+            m0SoundTracker++;
+
+            if (m0SoundTracker < 15)
+            {
+                _sound(0,m0SoundTracker,8,2);
+            }
+            else if (m0SoundTracker == 15)
+            {
+                m0SoundTracker = 0;
+                _sound(0,0,0,0);
+                p0Fired = false;
+            }
+        }
+
+        if (p1Fired == true)
+        {
+            m1SoundTracker++;
+
+            if (m1SoundTracker < 15)
+            {
+                _sound(1,m1SoundTracker,8,2);
+            }
+            else if (m1SoundTracker == 15)
+            {
+                m1SoundTracker = 0;
+                _sound(1,0,0,0);
+                p1Fired = false;
+            }
         }
 
         if (p0FireAvailable == false){ //start counter to limit p0 fire inputs
@@ -203,11 +266,6 @@ int main() {
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
 
-        // if (scoreArrayP0Tracker == 9 || scoreArrayP1Tracker == 9)
-        // {
-        //     cputsxy(5, 0, "Game Over");
-        //     //break;
-        // }
         waitvsync();
     }
 
@@ -394,13 +452,13 @@ void movePlayers(){
     p1LastMove = player1move;
 
     //moving player 1
-    if(JOY_BTN_1(player0move) && p0FireAvailable == true)  fire(0);
+    if(JOY_BTN_1(player0move) && p0FireAvailable == true) {fire(0); p0Fired = true;}
     else if(JOY_UP(player0move)) moveForward(0);
     else if(JOY_DOWN(player0move)) moveBackward(0);
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
 
     //moving player 2
-    if(JOY_BTN_1(player1move) && p1FireAvailable == true) fire(1);
+    if(JOY_BTN_1(player1move) && p1FireAvailable == true) {fire(1); p1Fired = true;}
     else if(JOY_UP(player1move)) moveForward(1);
     else if(JOY_DOWN(player1move)) moveBackward(1);
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
@@ -808,6 +866,7 @@ void checkCollision(){
         POKE(missileAddress+m1LastVerticalLocation, 0);
         p1Score += 1;
         updatePlayerScore();
+        tankExplosion();
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
@@ -815,6 +874,7 @@ void checkCollision(){
         POKE(missileAddress+m0LastVerticalLocation, 0);
         p0Score += 1;
         updatePlayerScore();
+        tankExplosion();
     }
 
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
@@ -826,8 +886,8 @@ void fire(int tank){
     {
         POKE(missileAddress+m0LastVerticalLocation, 0);
         missileLocationHelper(p0Direction, p0HorizontalLocation, p0VerticalLocation, tank);
-        POKE(horizontalRegister_M0, m0LastHorizontalLocation);
-        POKE(missileAddress+m0LastVerticalLocation, 2);
+        // POKE(horizontalRegister_M0, m0LastHorizontalLocation);
+        // POKE(missileAddress+m0LastVerticalLocation, 2);
         m0exists = true; //missile exists until colliding
         p0FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
@@ -835,8 +895,8 @@ void fire(int tank){
     {
         POKE(missileAddress+m1LastVerticalLocation, 0);
         missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, tank);
-        POKE(horizontalRegister_M1, m1LastHorizontalLocation);
-        POKE(missileAddress+m1LastVerticalLocation, 8);
+        // POKE(horizontalRegister_M1, m1LastHorizontalLocation);
+        // POKE(missileAddress+m1LastVerticalLocation, 8);
         m1exists = true; //missile exists until colliding
         p1FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
@@ -1077,5 +1137,15 @@ void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int
             POKE(missileAddress+mVerticalLocation, 8);
         }
     }
+}
+
+void tankExplosion()
+{
+    for (j = 0; j < 255; j++)
+    {
+        _sound(0, j , 8, 8);
+        for (i = 0; i < 250; i++); //To add delay
+    }
+    _sound(0, 0, 0, 0);
 }
 
