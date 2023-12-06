@@ -4,12 +4,10 @@
     Goal: Porting from Atari 2600 to Atari 800 using C
     Compiler: CC65 Cross Compiler
    -------------------------------------------------------------------
-    Code Key:
-        - Player 1 = P0
-        - Player 2 = P1
 */
+//Code Key: Player 1 = P0
+//          Player 2 = P1
 
-//CC65 Libraries Used
 #include <atari.h>
 #include <_antic.h>
 #include <_atarios.h>
@@ -38,6 +36,8 @@
 #define WEST_NORTH          14
 #define WEST_60             15
 
+
+
 //collision detection definitions, add all registers
 #define P1PF                0xD005
 #define P0PF                0xD004
@@ -45,6 +45,7 @@
 #define M0PF                0xD000
 #define M1P                 0xD009
 #define M0P                 0xD008
+
 #define HITCLR              0xD01E
 
 /*
@@ -91,8 +92,8 @@ int *horizontalRegister_P1 = (int *)0xD001;
 int *horizontalRegister_M1 = (int *)0xD005;
 
 //Color-Luminance Registers
-int *colLumPM0 = (int *)0x02C0;
-int *colLumPM1 = (int *)0x02C1;
+int *colLumPM0 = (int *)0x2C0;
+int *colLumPM1 = (int *)0x2C1;
 
 //Starting direction of each Players
 unsigned int p0Direction = EAST;
@@ -123,13 +124,16 @@ int m1LastVerticalLocation;
 int m0direction;
 int m1direction;
 
-bool m0exists = false;
-bool m1exists = false;
-
 bool p0Fired = false;
 bool p1Fired = false;
+bool m0exists = false;
+bool m1exists = false;
+int p0FireDelayCounter = 0;
+int p1FireDelayCounter = 0;
+bool p0FireAvailable = true;
+bool p1FireAvailable = true;
 
-//Variable to keep track of score and ending the game when finished
+//scores
 //functions to turn and update tank positions
 int *characterSetP0[8] = {
         (int*)0x0030,
@@ -160,11 +164,13 @@ bool gameOn = true;
 /*
  * <-------------------- FUNCTION DECLARATIONS --------------------> 
  */
+//functions to be implemented
 void rearrangingDisplayList();
 void initializeScore();
 void createBitMap();
 void enablePMGraphics();
 void setUpTankDisplay();
+
 void movePlayers();
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
@@ -172,10 +178,12 @@ void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int
 void moveForward(int tank);
 void moveBackward(int tank);
 void checkCollision();
-void tankExplosion();
+//functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
+void tankExplosion();
 void updateplayerDir(int player);
-void rotateAI(); //TO BE IMPLEMENTED
+void spawnPlayer(int player);
+void rotateAI();
 
 /*
  * <-------------------- DRIVER MAIN --------------------> 
@@ -191,16 +199,12 @@ int main() {
     enablePMGraphics();
     setUpTankDisplay();
 
-    while (gameOn)
-    {
+    while (true) {
         //Slows down character movement e.g. (60fps/5) = 12moves/second (it is actually slower than this for some reason)
-        if (frameDelayCounter == 5)
-        {
+        if (frameDelayCounter == 5){
             movePlayers();
             frameDelayCounter = 0;
-        }
-        else
-        {
+        }else{
             frameDelayCounter++;
         }
 
@@ -236,50 +240,33 @@ int main() {
             }
         }
 
-        if (m0exists == true)
-        {
-            traverseMissile(m0direction, m0LastHorizontalLocation, m0LastVerticalLocation, 0);
+        if (p0FireAvailable == false){ //start counter to limit p0 fire inputs
+            p0FireDelayCounter++;
         }
-        if (m1exists == true)
-        {
-            traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
+        if (p0FireDelayCounter >= 60){
+            p0FireAvailable = true;
+            p0FireDelayCounter = 0;
+        }
+        if (p1FireAvailable == false){ //start counter to limit p0 fire inputs
+            p1FireDelayCounter++;
+        }
+        if (p1FireDelayCounter >= 60){
+            p1FireAvailable = true;
+            p1FireDelayCounter = 0;
         }
 
+
+        if (m0exists == true){
+            traverseMissile(m0direction, m0LastHorizontalLocation, m0LastVerticalLocation, 0);
+        }
+        if (m1exists == true){
+            traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
+        }
         checkCollision();
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
 
-        if (p0Score == 25 || p1Score == 25)
-        {
-            int tracker = 0;
-
-            for (i = 0; i < 20; i ++)
-            {
-                POKE(charMapAddress + i, 0);
-
-                if (i >= 6 && i <= 13)
-                {
-                    if (p0Score == 25)
-                    {
-                        POKE(charMapAddress + i, characterSetP0[tracker]);
-                    }
-                    else if (p1Score == 25)
-                    {
-                        POKE(charMapAddress + i, characterSetP1[tracker]);
-                    }
-                    tracker++;
-                } 
-            }
-
-            gameOn = false;
-        }
-        
         waitvsync();
-    }
-
-    while (true)
-    {
-
     }
 
     return 0;
@@ -338,6 +325,7 @@ void rearrangingDisplayList() {
 }
 
 void initializeScore() {
+    //Temp code
     POKE(charMapAddress + 5, 16);
     POKE(charMapAddress + 14, 16);
 }
@@ -464,13 +452,13 @@ void movePlayers(){
     p1LastMove = player1move;
 
     //moving player 1
-    if(JOY_BTN_1(player0move) && m0exists == false) {fire(0); p0Fired = true;}
+    if(JOY_BTN_1(player0move) && p0FireAvailable == true) {fire(0); p0Fired = true;}
     else if(JOY_UP(player0move)) moveForward(0);
     else if(JOY_DOWN(player0move)) moveBackward(0);
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move)) turnplayer(player0move, 0);
 
     //moving player 2
-    if(JOY_BTN_1(player1move) && m1exists == false) {fire(1); p1Fired = true;}
+    if(JOY_BTN_1(player1move) && p1FireAvailable == true) {fire(1); p1Fired = true;}
     else if(JOY_UP(player1move)) moveForward(1);
     else if(JOY_DOWN(player1move)) moveBackward(1);
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move)) turnplayer(player1move, 1);
@@ -832,7 +820,7 @@ void moveBackward(int tank){
 
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
-    //checking for player 2 to playfield collision
+    //checking for player 1 to playfield collision
     if(PEEK(P1PF) != 0x0000){
         if(JOY_UP(p1history)){
             moveBackward(1);
@@ -847,7 +835,7 @@ void checkCollision(){
             moveForward(1);
         }
     }
-    //checking for player 1 to playfield collision
+    //checking for player 0 to playfield collision
     if(PEEK(P0PF) != 0x0000){
         if(JOY_UP(p0history)){
             moveBackward(0);
@@ -856,18 +844,18 @@ void checkCollision(){
             moveBackward(0);
         }
         if(JOY_DOWN(p0history)){
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
-            moveForward(1);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
+            moveForward(0);
         }
     }
-    //checking for missile (player 2) to playfield collision
+    //checking for missile (player 1) to playfield collision
     if(PEEK(M1PF) != 0x0000){
         m1exists = false;
         POKE(missileAddress+m1LastVerticalLocation, 0);
     }
-    //checking for missile (player 1) to playfield collision
+    //checking for missile (player 0) to playfield collision
     if(PEEK(M0PF) != 0x0000){
         m0exists = false;
         POKE(missileAddress+m0LastVerticalLocation, 0);
@@ -898,21 +886,23 @@ void fire(int tank){
     {
         POKE(missileAddress+m0LastVerticalLocation, 0);
         missileLocationHelper(p0Direction, p0HorizontalLocation, p0VerticalLocation, tank);
-        //POKE(horizontalRegister_M0, m0LastHorizontalLocation);
-        //POKE(missileAddress+m0LastVerticalLocation, 2);
+        // POKE(horizontalRegister_M0, m0LastHorizontalLocation);
+        // POKE(missileAddress+m0LastVerticalLocation, 2);
         m0exists = true; //missile exists until colliding
+        p0FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
     else if (tank == 1)
     {
         POKE(missileAddress+m1LastVerticalLocation, 0);
         missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, tank);
-        //POKE(horizontalRegister_M1, m1LastHorizontalLocation);
-        //POKE(missileAddress+m1LastVerticalLocation, 8);
+        // POKE(horizontalRegister_M1, m1LastHorizontalLocation);
+        // POKE(missileAddress+m1LastVerticalLocation, 8);
         m1exists = true; //missile exists until colliding
+        p1FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
 }
 
-//This fucntion is just to determine where the missile should be poked at. It tracks the locations of the tank and
+//This function is just to determine where the missile should be poked at. It tracks the locations of the tank and
 //sets up the missile to be located at the tank's barrel
 void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank)
 {
@@ -1158,3 +1148,4 @@ void tankExplosion()
     }
     _sound(0, 0, 0, 0);
 }
+
