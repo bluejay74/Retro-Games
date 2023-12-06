@@ -266,6 +266,31 @@ int main() {
         p1history = p1LastMove; //helps to fix collision bug
         p0history = p0LastMove; //helps to fix collision bug
 
+        if (p0Score == 25 || p1Score == 25)
+        {
+            int tracker = 0;
+
+            for (i = 0; i < 20; i ++)
+            {
+                POKE(charMapAddress + i, 0);
+
+                if (i >= 6 && i <= 13)
+                {
+                    if (p0Score == 25)
+                    {
+                        POKE(charMapAddress + i, characterSetP0[tracker]);
+                    }
+                    else if (p1Score == 25)
+                    {
+                        POKE(charMapAddress + i, characterSetP1[tracker]);
+                    }
+                    tracker++;
+                } 
+            }
+
+            gameOn = false;
+        }
+        
         waitvsync();
     }
 
