@@ -120,10 +120,10 @@ int m0LastHorizontalLocation;
 int m0LastVerticalLocation;
 int m1LastHorizontalLocation;
 int m1LastVerticalLocation;
-
 int m0direction;
 int m1direction;
 
+//variables to keep track of tank firing
 bool p0Fired = false;
 bool p1Fired = false;
 bool m0exists = false;
@@ -139,6 +139,10 @@ bool p1IsHit = false;
 int p0HitDir = 0;
 int p1HitDir = 0;
 int hitTime[2] = {0, 0};
+
+//variables to delay tank diagonal movement
+bool p0FirstDiag = false;
+bool p1FirstDiag = false;
 
 //scores
 //functions to turn and update tank positions
@@ -166,6 +170,8 @@ int *characterSetP1[8] = {
 
 int p0Score = 16;
 int p1Score = 16;
+
+//variable to run the game, if it is false a user has won
 bool gameOn = true;
 
 
@@ -482,14 +488,26 @@ void movePlayers(){
     p1LastMove = player1move;
     //moving player 1, only if they are not hit
     if(JOY_BTN_1(player0move) && p0FireAvailable == true && !p0IsHit) {fire(0); p0Fired = true;}
-    else if(JOY_UP(player0move) && !p0IsHit) moveForward(0);
-    else if(JOY_DOWN(player0move) && !p0IsHit) moveBackward(0);
+    else if(JOY_UP(player0move) && !p0IsHit) {
+        if (!(p0Direction % 2) || ((p0Direction % 2) && p0FirstDiag == true)) moveForward(0);
+        else p0FirstDiag = true;
+    }
+    else if(JOY_DOWN(player0move) && !p0IsHit) {
+        if(!(p0Direction % 2) || ((p0Direction % 2) && p0FirstDiag == true)) moveBackward(0);
+        else p0FirstDiag = true;
+    }
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move) && !p0IsHit) turnplayer(player0move, 0);
 
     //moving player 2, only if they are not hit
     if(JOY_BTN_1(player1move) && p1FireAvailable == true && !p1IsHit) {fire(1); p1Fired = true;}
-    else if(JOY_UP(player1move) && !p1IsHit) moveForward(1);
-    else if(JOY_DOWN(player1move) && !p1IsHit) moveBackward(1);
+    else if(JOY_UP(player1move) && !p1IsHit) {
+        if (!(p1Direction % 2) || ((p1Direction % 2) && p1FirstDiag == true)) moveForward(1);
+        else p1FirstDiag = true;
+    }
+    else if(JOY_DOWN(player1move) && !p1IsHit) {
+        if(!(p1Direction % 2) || ((p1Direction % 2) && p1FirstDiag == true)) moveBackward(1);
+        else p1FirstDiag = true;
+    }
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move) && !p1IsHit) turnplayer(player1move, 1);
 
 }
@@ -579,6 +597,7 @@ void updateplayerDir(int player){
 void moveForward(int tank){
     //moving forward tank 1--------------------------------
     if(tank == 0){
+        p0FirstDiag = false;
         //movement for north
         if(p0Direction == NORTH){
             POKE(playerAddress+(p0VerticalLocation+7), 0);
@@ -647,6 +666,7 @@ void moveForward(int tank){
 
         //moving forward tank 2------------------------------
     else if(tank == 1){
+        p1FirstDiag = false;
         //movement for north
         if(p1Direction == NORTH){
             POKE(playerAddress+(p1VerticalLocation+7), 0);
@@ -716,6 +736,7 @@ void moveForward(int tank){
 void moveBackward(int tank){
     //moving backward tank 1-------------------------------
     if(tank == 0){
+        p0FirstDiag = false;
         //movement for north
         if(p0Direction == NORTH){
             POKE(playerAddress+p0VerticalLocation, 0);
@@ -783,6 +804,7 @@ void moveBackward(int tank){
 
     //moving backward tank 2-------------------------------
     if(tank == 1){
+        p1FirstDiag = false;
         //movement for north
         if(p1Direction == NORTH){
             POKE(playerAddress+p1VerticalLocation, 0);
@@ -849,11 +871,12 @@ void moveBackward(int tank){
 }
 
 void checkBorders(){
-    //if they're too far to the left
+    //variables to make sure that they don't just jump back across the screen (doesn't trigger as move up right after move down)
     bool movedLeft0 = false;
     bool movedLeft1 = false;
     bool movedup0 = false;
     bool movedup1 = false;
+    //if they are too far to the left
     if(p0HorizontalLocation <= 50 && p0IsHit){
         movedLeft0 = true;
         p0HorizontalLocation = 195;
@@ -877,6 +900,7 @@ void checkBorders(){
 
     //if they're too far up
     if(p0VerticalLocation <= 57 && p0IsHit){
+        //delete player from upper location
         POKE(playerAddress+p0VerticalLocation, 0);
         POKE(playerAddress+(p0VerticalLocation + 1), 0);
         POKE(playerAddress+(p0VerticalLocation + 2), 0);
@@ -885,11 +909,12 @@ void checkBorders(){
         POKE(playerAddress+(p0VerticalLocation + 5), 0);
         POKE(playerAddress+(p0VerticalLocation + 6), 0);
         POKE(playerAddress+(p0VerticalLocation + 7), 0);
-
+        //add them to lower location
         p0VerticalLocation = 207;
         movedup0 = true;
     }
     if(p1VerticalLocation <= 312 && p1IsHit){
+        //delete player from upper location
         POKE(playerAddress+p1VerticalLocation, 0);
         POKE(playerAddress+(p1VerticalLocation + 1), 0);
         POKE(playerAddress+(p1VerticalLocation + 2), 0);
@@ -898,12 +923,14 @@ void checkBorders(){
         POKE(playerAddress+(p1VerticalLocation + 5), 0);
         POKE(playerAddress+(p1VerticalLocation + 6), 0);
         POKE(playerAddress+(p1VerticalLocation + 7), 0);
+        //add them to lower location
         p1VerticalLocation = 464;
         movedup1 = true;
     }
 
     //if they're too far down
     if(p0VerticalLocation >= 207 && p0IsHit && !movedup0){
+        //delete player at lower location
         POKE(playerAddress+p0VerticalLocation, 0);
         POKE(playerAddress+(p0VerticalLocation + 1), 0);
         POKE(playerAddress+(p0VerticalLocation + 2), 0);
@@ -912,9 +939,11 @@ void checkBorders(){
         POKE(playerAddress+(p0VerticalLocation + 5), 0);
         POKE(playerAddress+(p0VerticalLocation + 6), 0);
         POKE(playerAddress+(p0VerticalLocation + 7), 0);
+        //add them to upper location
         p0VerticalLocation = 57;
     }
     if(p1VerticalLocation >= 464 && p1IsHit && !movedup1){
+        //delete player at lower location
         POKE(playerAddress+p1VerticalLocation, 0);
         POKE(playerAddress+(p1VerticalLocation + 1), 0);
         POKE(playerAddress+(p1VerticalLocation + 2), 0);
@@ -923,14 +952,18 @@ void checkBorders(){
         POKE(playerAddress+(p1VerticalLocation + 5), 0);
         POKE(playerAddress+(p1VerticalLocation + 6), 0);
         POKE(playerAddress+(p1VerticalLocation + 7), 0);
+        //add them to upper location
         p1VerticalLocation = 312;
     }
 }
 
 void spinTank(int tank){
+
+    //if player 1 is hit
     if(tank == 0){
         //if the tank is hit from the north
         if(p0HitDir == NORTH || p0HitDir == NORTH_EAST || p0HitDir == EAST_60 || p0HitDir == NORTH_15){
+            //move left and spin
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
             if(p0Direction == WEST_NORTH || p0Direction == WEST_60) p0Direction = NORTH;
@@ -963,19 +996,25 @@ void spinTank(int tank){
             p0VerticalLocation--;
             updateplayerDir(0);
         }
-
+        //lower the time that the tank is stuck in "hit" state
         hitTime[0] = hitTime[0] - 1;
         if(hitTime[0] == 0) p0IsHit = false;
     }
+
+    //if player 2 is hit
     if(tank == 1){
+        //if the tank is hit from the north
         if(p1HitDir == NORTH || p1HitDir == NORTH_15 || p1HitDir == NORTH_EAST || p1HitDir == EAST_60){
+            //move left and spin
             p1HorizontalLocation++;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
             if(p1Direction == WEST_NORTH || p1Direction == WEST_60) p1Direction = NORTH;
             else p1Direction = p1Direction + 2;
             updateplayerDir(1);
         }
+        //if the tank is hit from the south
         if(p1HitDir == SOUTH || p1HitDir == SOUTH_15 || p1HitDir == SOUTH_WEST || p1HitDir == WEST_60){
+            //move right and spin
             p1HorizontalLocation--;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
             if(p1Direction == NORTH_15 || p1Direction == NORTH) p1Direction = WEST_60;
@@ -991,6 +1030,7 @@ void spinTank(int tank){
             else p1Direction = p1Direction - 2;
             updateplayerDir(1);
         }
+        //if the tank is hit from the east
         if(p1HitDir == EAST || p1HitDir == EAST_15 || p1HitDir == EAST_SOUTH || p1HitDir == NORTH_60){
             //move up and spin
             POKE(playerAddress+p1VerticalLocation+7, 0);
@@ -999,10 +1039,7 @@ void spinTank(int tank){
             else p1Direction = p1Direction - 2;
             updateplayerDir(1);
         }
-
-
-
-
+        //lower the time that the tank is stuck in the "hit" state
         hitTime[1] = hitTime[1] - 1;
         if(hitTime[1] == 0) p1IsHit = false;
     }
@@ -1061,7 +1098,6 @@ void checkCollision(){
         p0IsHit = true;
         hitTime[0] = 12;
         j = 0;
-        //tankExplosion();
     }
     //checking for missile0 to player collision
     if(PEEK(M0P) != 0x0000){
@@ -1073,7 +1109,6 @@ void checkCollision(){
         p1IsHit = true;
         hitTime[1] = 12;
         j = 0;
-        //tankExplosion();
     }
 
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
@@ -1085,8 +1120,6 @@ void fire(int tank){
     {
         POKE(missileAddress+m0LastVerticalLocation, 0);
         missileLocationHelper(p0Direction, p0HorizontalLocation, p0VerticalLocation, tank);
-        // POKE(horizontalRegister_M0, m0LastHorizontalLocation);
-        // POKE(missileAddress+m0LastVerticalLocation, 2);
         m0exists = true; //missile exists until colliding
         p0FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
@@ -1094,8 +1127,6 @@ void fire(int tank){
     {
         POKE(missileAddress+m1LastVerticalLocation, 0);
         missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, tank);
-        // POKE(horizontalRegister_M1, m1LastHorizontalLocation);
-        // POKE(missileAddress+m1LastVerticalLocation, 8);
         m1exists = true; //missile exists until colliding
         p1FireAvailable = false; //prevents missile spamming, starts a counter in the main loop
     }
@@ -1338,13 +1369,4 @@ void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int
     }
 }
 
-void tankExplosion()
-{
-    for (j = 0; j < 255; j++)
-    {
-        _sound(0, j , 8, 8);
-        for (i = 0; i < 250; i++); //To add delay
-    }
-    _sound(0, 0, 0, 0);
-}
 
