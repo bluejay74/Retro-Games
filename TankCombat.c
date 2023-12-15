@@ -190,6 +190,7 @@ int p1Score = 16;
 //variable to run the game, if it is false a user has won
 bool gameOn = true;
 
+
 /*
     ----------------------------------------------- FUNCTION DECLARATIONS -------------------------------------------------------
 */
@@ -280,6 +281,7 @@ int main() {
             if (p0FireAvailable == false) { //start counter to limit p0 fire inputs
                 p0FireDelayCounter++;
             }
+            
             if (p0FireDelayCounter >= 60) {
                 p0FireAvailable = true;
                 p0FireDelayCounter = 0;
@@ -305,7 +307,6 @@ int main() {
             p1history = p1LastMove; //helps to fix collision bug
             p0history = p0LastMove; //helps to fix collision bug
 
-
             //This condition will only be met when either player 1 or player 2 reaches the score of 9,
             //or charcater 9 (which is 0x0019 in HEX located at Character Memory)
             if (p0Score == 25 || p1Score == 25) {
@@ -330,8 +331,8 @@ int main() {
             waitvsync();
         }
     }
-
     return 0;
+
 }
 
 /*
@@ -561,7 +562,7 @@ void movePlayers(){
         else p0FirstDiag = true;
     }
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move) && !p0IsHit) turnplayer(player0move, 0);
-
+    
     //moving player 2, only if they are not hit
     if(JOY_BTN_1(player1move) && p1FireAvailable == true && !p1IsHit) {fire(1); p1Fired = true;}
     else if(JOY_UP(player1move) && !p1IsHit) {
@@ -610,6 +611,7 @@ void turnplayer(unsigned char turn, int player){
     //for player 2
     else if (player == 1) {
         if (p1Direction == WEST_60 && JOY_RIGHT(turn)) {
+
             p1Direction = NORTH;
         }
         else if (p1Direction == NORTH && JOY_LEFT(turn)) {
@@ -656,10 +658,11 @@ void updateplayerDir(int player){
             }
         }
     }
-
+    
     //updating player 2
     else if (player == 1) {
         if (p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH) {
+
             int counter = 7;
             for (i = p1VerticalLocation; i < p1VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p1Direction][counter]);
