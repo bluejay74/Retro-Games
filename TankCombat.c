@@ -35,7 +35,7 @@
 #include <joystick.h>
 
 /*
-    ----------------------------------------------- Identifiers -------------------------------------------------------
+    ----------------------------------------------- IDENTIFIERS -------------------------------------------------------
 */
 //Defining the 16 tank rotations
 #define NORTH               0
@@ -44,7 +44,7 @@
 #define NORTH_60            3
 #define EAST                4
 #define EAST_15             5
-#define EAST_SOUTH          6   //South East
+#define EAST_SOUTH          6
 #define EAST_60             7
 #define SOUTH               8
 #define SOUTH_15            9
@@ -52,7 +52,7 @@
 #define SOUTH_60            11
 #define WEST                12
 #define WEST_15             13
-#define WEST_NORTH          14  //North West
+#define WEST_NORTH          14
 #define WEST_60             15
 
 //collision detection definitions, add all registers
@@ -62,10 +62,11 @@
 #define M0PF                0xD000         //Missile 0 to Playfield Collision Register
 #define M1P                 0xD009         //Missile 1 to Player Collision Register
 #define M0P                 0xD008         //Missile 0 to Player Collision Register
+
 #define HITCLR              0xD01E         //Collsion Clear Register: Poking a 1 clears ALL collision registers
 
 /*
-    ------------------------------------------- Global Variables ---------------------------------------------------
+    ----------------------------------------------- GLOBAL VARAIABLES -------------------------------------------------------
 */
 //Different tank pictures to be printed
 unsigned int tankPics[16][8] = {
@@ -87,39 +88,13 @@ unsigned int tankPics[16][8] = {
         {36,38,158,255,255,114,112,32}      //WEST_60
 };
 
-//Character array to print charcters in Atari's character memory screen for Player 1
-int *characterSetP0[8] = {
-        (int*)0x0030,   //Character: P
-        (int*)0x0011,   //Character: 1
-        (int*)0x0000,   //Character:   - 'Space'
-        (int*)0x0037,   //Character: W
-        (int*)0x0029,   //Character: I
-        (int*)0x002E,   //Character: N
-        (int*)0x0033,   //Character: S
-        (int*)0x0001    //Character: !
-};
-
-//Character array to print charcters in Atari's character memory screen for Player 1
-int *characterSetP1[8] = {
-        (int*)0x0030,   //Character: P
-        (int*)0x0012,   //Character: 2
-        (int*)0x0000,   //Character:   - 'Space'
-        (int*)0x0037,   //Character: W
-        (int*)0x0029,   //Character: I
-        (int*)0x002E,   //Character: N
-        (int*)0x0033,   //Character: S
-        (int*)0x0001    //Character: !
-};
-
-//For loop counters (Doesnt matter what value is set to as for loop intializer will set/reset values)
 unsigned char j = 255;
-int i;
-
 unsigned char m0SoundTracker = 0;
 unsigned char m1SoundTracker = 0;
+int i;
 int frameDelayCounter = 0;
 
-//Main display and graphics Adresses
+//Adresses
 int bitMapAddress;
 int charMapAddress;
 int PMBaseAddress;
@@ -139,14 +114,12 @@ int *colLumPM1 = (int *)0x2C1;
 //Starting direction of each Players
 unsigned int p0Direction = EAST;
 unsigned int p1Direction = WEST;
-
-//Keep track of each player's moves
 unsigned char p0LastMove;
 unsigned char p1LastMove;
 unsigned char p0history;
 unsigned char p1history;
 
-//Starting vertical and horizontal position of players (Use this varaibles when initializing game)
+//Starting vertical and horizontal position of players
 const int verticalStartP0 = 131;
 const int horizontalStartP0 = 57;
 const int verticalStartP1 = 387;
@@ -158,17 +131,15 @@ int p0HorizontalLocation = 57;
 int p1VerticalLocation = 387;
 int p1HorizontalLocation = 190;
 
-//Variables for tracking horizontal and vertical missile location 
+//variables for missile tracking
 int m0LastHorizontalLocation;
 int m0LastVerticalLocation;
 int m1LastHorizontalLocation;
 int m1LastVerticalLocation;
-
-//Variables used for missile direction tracking
 int m0direction;
 int m1direction;
 
-//Variables to keep track of tank firing
+//variables to keep track of tank firing
 bool p0Fired = false;
 bool p1Fired = false;
 bool m0exists = false;
@@ -178,61 +149,69 @@ int p1FireDelayCounter = 0;
 bool p0FireAvailable = true;
 bool p1FireAvailable = true;
 
-//Tank hit variables
+//tank hit variables
 bool p0IsHit = false;
 bool p1IsHit = false;
 int p0HitDir = 0;
 int p1HitDir = 0;
 int hitTime[2] = {0, 0};
 
-//Variables to delay tank diagonal movement
+//variables to delay tank diagonal movement
 bool p0FirstDiag = false;
 bool p1FirstDiag = false;
 
-//player 1 and player 2 starting score display (0)
-int p0Score = 16;   // Character: 0
-int p1Score = 16;    // Character: 0
+//scores
+//functions to turn and update tank positions
+int *characterSetP0[8] = {
+        (int*)0x0030,
+        (int*)0x0011,
+        (int*)0x0000,
+        (int*)0x0037,
+        (int*)0x0029,
+        (int*)0x002E,
+        (int*)0x0033,
+        (int*)0x0001
+};
 
-//Variable to run the game, if it is false a user has won
+int *characterSetP1[8] = {
+        (int*)0x0030,
+        (int*)0x0012,
+        (int*)0x0000,
+        (int*)0x0037,
+        (int*)0x0029,
+        (int*)0x002E,
+        (int*)0x0033,
+        (int*)0x0001
+};
+
+int p0Score = 16;
+int p1Score = 16;
+
+//variable to run the game, if it is false a user has won
 bool gameOn = true;
 
-
 /*
-    ----------------------------------------------- Function Declaration -------------------------------------------------------
+    ----------------------------------------------- FUNCTION DECLARATIONS -------------------------------------------------------
 */
-//Functions for initialziing and setting up display
 void rearrangingDisplayList();
 void initializeScore();
 void createBitMap();
 void enablePMGraphics();
 void setUpTankDisplay();
-
-//Functions for tank movements
+void spinTank(int tank);
 void movePlayers();
-void moveForward(int tank);
-void moveBackward(int tank);
-
-//Functions for missile movements
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
 void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
-
-//Functions for collisions
+void moveForward(int tank);
+void moveBackward(int tank);
 void checkCollision();
-
-//functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
-void spinTank(int tank);
 void tankExplosion();
 void updateplayerDir(int player);
 
-//TO DO: Function to be implemented
-//void rotateAI();
-
-
-
 /*
-    ----------------------------------------------- Main (Driver) -------------------------------------------------------
+    ----------------------------------------------- MAIN DRIVER -------------------------------------------------------
 */
 int main() {
     //Loading and installing joystick driver
@@ -351,13 +330,13 @@ int main() {
             waitvsync();
         }
     }
-    return 0;
 
+    return 0;
 }
 
 /*
- * <-------------------- FUNCTION IMPLEMENTATIONS -------------------->
- */
+    ----------------------------------------------- FUNCTION IMPLEMENTATIONS -------------------------------------------------------
+*/
 
 //------------------------------ rearrangingDisplayList ------------------------------
 // Purpose: Reconfigure the display list for graphics mode to ensure proper rendering.
@@ -594,7 +573,6 @@ void movePlayers(){
         else p1FirstDiag = true;
     }
     else if(JOY_LEFT(player1move) || JOY_RIGHT(player1move) && !p1IsHit) turnplayer(player1move, 1);
-
 }
 
 //------------------------------ turnPlayer ------------------------------
@@ -1010,7 +988,6 @@ void moveBackward(int tank) {
     }
 }
 
-//------------------------------ checkBorders ------------------------------
 void checkBorders() {
     //variables to make sure that they don't just jump back across the screen (doesn't trigger as move up right after move down)
     bool movedLeft0 = false;
@@ -1086,7 +1063,6 @@ void checkBorders() {
     }
 }
 
-//------------------------------ spinTank ------------------------------
 void spinTank(int tank){
 
     //if player 1 is hit
@@ -1176,7 +1152,6 @@ void spinTank(int tank){
     checkBorders();
 }
 
-//------------------------------ checkCollision ------------------------------
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
     //checking for player 1 to playfield collision
@@ -1255,7 +1230,7 @@ void checkCollision(){
 // Postconditions: A projectile is launched from the tank, and its existence is marked
 //                 until a collision occurs. Fire availability is temporarily disabled to
 //                 prevent rapid firing.
-void fire(int tank){
+void fire(int tank) {
     if (tank == 0)
     {
         POKE(missileAddress+m0LastVerticalLocation, 0);
@@ -1286,8 +1261,7 @@ void fire(int tank){
 // Preconditions: None
 // Postconditions: The missile's launch position is set according to the tank's
 //                 orientation.
-void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank)
-{
+void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank) {
     int mdirection;
     int mLastHorizontalLocation = 0;
     int mLastVerticalLocation = 0;
@@ -1384,79 +1358,118 @@ void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, 
 // Postconditions: The missile animation progresses, considering tank movement.
 void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank)
 {
-    //Clear up any existing missiles in memory
     POKE(missileAddress+mVerticalLocation, 0);
 
-    if (missileDirection == NORTH) {
+    if (missileDirection == NORTH)
+    {
         mVerticalLocation--;
     }
-    else if (missileDirection == NORTH_15) {
+    else if (missileDirection == NORTH_15)
+    {
         mVerticalLocation -= 2;
         mHorizontalLocation++;
-    } else if (missileDirection == NORTH_EAST) {
+    }
+    else if (missileDirection == NORTH_EAST)
+    {
         mVerticalLocation--;
         mHorizontalLocation++;
-    } else if (missileDirection == NORTH_60) {
+    }
+    else if (missileDirection == NORTH_60)
+    {
         mVerticalLocation--;
         mHorizontalLocation += 2;
-    } else if (missileDirection == EAST) {
+    }
+    else if (missileDirection == EAST)
+    {
         mHorizontalLocation++;
-    } else if (missileDirection == EAST_15) {
+    }
+    else if (missileDirection == EAST_15)
+    {
         mVerticalLocation++;
         mHorizontalLocation += 2;
-    } else if (missileDirection == EAST_SOUTH) {
+    }
+    else if (missileDirection == EAST_SOUTH)
+    {
         mVerticalLocation++;
         mHorizontalLocation++;
-    } else if (missileDirection == EAST_60) {
+    }
+    else if (missileDirection == EAST_60)
+    {
         mVerticalLocation += 2;
         mHorizontalLocation++;
-    } else if (missileDirection == SOUTH) {
+    }
+    else if (missileDirection == SOUTH)
+    {
         mVerticalLocation++;
-    } else if (missileDirection == SOUTH_15) {
+    }
+    else if (missileDirection == SOUTH_15)
+    {
         mVerticalLocation += 2;
         mHorizontalLocation--;
-    } else if (missileDirection == SOUTH_WEST) {
+    }
+    else if (missileDirection == SOUTH_WEST)
+    {
         mVerticalLocation++;
         mHorizontalLocation--;
-    } else if (missileDirection == SOUTH_60) {
+    }
+    else if (missileDirection == SOUTH_60)
+    {
         mVerticalLocation++;
         mHorizontalLocation -= 2;
-    } else if (missileDirection == WEST) {
+    }
+    else if (missileDirection == WEST)
+    {
         mHorizontalLocation--;
-    } else if (missileDirection == WEST_15) {
+    }
+    else if (missileDirection == WEST_15)
+    {
         mVerticalLocation--;
         mHorizontalLocation -= 2;
-    } else if (missileDirection == WEST_NORTH) {
+    }
+    else if (missileDirection == WEST_NORTH)
+    {
         mVerticalLocation--;
         mHorizontalLocation--;
-    } else if (missileDirection == WEST_60) {
+    }
+    else if (missileDirection == WEST_60)
+    {
         mVerticalLocation -= 2;
         mHorizontalLocation--;
     }
 
-    if (tank == 0) {
+
+    if (tank == 0)
+    {
         m0LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m0LastVerticalLocation = mVerticalLocation; //saving new location to global variables
 
         POKE(horizontalRegister_M0, mHorizontalLocation);
 
-        //If both missile exists (both are fired)
-        if (m0LastVerticalLocation == m1LastVerticalLocation && m1exists == true) {
-            POKE(missileAddress+mVerticalLocation, 10); //Turn on missiles for both players
-        } else {
-            POKE(missileAddress+mVerticalLocation, 2); //Else only turn on missile for Player 1
+        if (m0LastVerticalLocation == m1LastVerticalLocation && m1exists == true)
+        {
+            POKE(missileAddress+mVerticalLocation, 10);
         }
-    } else if (tank == 1) {
+        else
+        {
+            POKE(missileAddress+mVerticalLocation, 2);
+        }
+    }
+    else if (tank == 1)
+    {
         m1LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m1LastVerticalLocation = mVerticalLocation; //saving new location to global variables
 
         POKE(horizontalRegister_M1, mHorizontalLocation);
 
-        //If both missile exists (both are fired)
-        if (m1LastVerticalLocation == m0LastVerticalLocation && m0exists == true) {
-            POKE(missileAddress+mVerticalLocation, 10); //Turn on missiles for both players
-        } else {
-            POKE(missileAddress+mVerticalLocation, 2); //Else only turn on missile for Player 2
+        if (m1LastVerticalLocation == m0LastVerticalLocation && m0exists == true)
+        {
+            POKE(missileAddress+mVerticalLocation, 10);
+        }
+        else
+        {
+            POKE(missileAddress+mVerticalLocation, 8);
         }
     }
 }
+
+
