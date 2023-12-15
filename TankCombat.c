@@ -206,8 +206,7 @@ int main() {
     joy_load_driver(joy_stddrv);        //Load joystick driver
     joy_install(joy_static_stddrv);     //Install joystick driver
 
-    _graphics(
-            18);                      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
+    _graphics(18);                      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
     rearrangingDisplayList();           //rearranging graphics 3 display list
     initializeScore();
     createBitMap();
