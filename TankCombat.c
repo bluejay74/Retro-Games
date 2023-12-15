@@ -1,13 +1,29 @@
-/* -------------------------------------------------------------------
-    Programmer: Andrew Lim, Casey Duncan, Jayden Anderson
-    Project: Tank Combat Source Code
-    Goal: Porting from Atari 2600 to Atari 800 using C
-    Compiler: CC65 Cross Compiler
-   -------------------------------------------------------------------
+/* 
+    ----------------------------------------------- TankCombat.C -------------------------------------------------------
+    Programmers                 : Andrew Lim, Casey Duncan, Jayden Anderson
+    Course Number               : BEE 496, Capstone Project
+    Facilitator/Sponsor         : Professor Joseph C. Decuir
+    Creation Date               : September 29, 2023
+    Date of Last Modification   : December 10, 2023
+    --------------------------------------------------------------------------------------------------------------------
+    Project Details
+        Description             : Tank Combat source code developed using C
+        Compiler                : CC65
+        Goal                    : Porting the original Tank Combat from Atari 2600 to Atari 800
+    --------------------------------------------------------------------------------------------------------------------
+    NOTE:
+        Code Key:
+            Player 1 = P0
+            Player 2 = P1
+    --------------------------------------------------------------------------------------------------------------------
 */
-//Code Key: Player 1 = P0
-//          Player 2 = P1
 
+
+/*
+    -------------------------------------------- Libraries (Header Files) ----------------------------------------------------
+    Libraries used down below are provided by the CC65 Compiler. To download the CC 65 compiler please refer to the
+    link provided: https://cc65.github.io/
+*/
 #include <atari.h>
 #include <_antic.h>
 #include <_atarios.h>
@@ -18,6 +34,9 @@
 #include <stdlib.h>
 #include <joystick.h>
 
+/*
+    ----------------------------------------------- Identifiers -------------------------------------------------------
+*/
 //Defining the 16 tank rotations
 #define NORTH               0
 #define NORTH_15            1
@@ -25,7 +44,7 @@
 #define NORTH_60            3
 #define EAST                4
 #define EAST_15             5
-#define EAST_SOUTH          6
+#define EAST_SOUTH          6   //South East
 #define EAST_60             7
 #define SOUTH               8
 #define SOUTH_15            9
@@ -33,25 +52,21 @@
 #define SOUTH_60            11
 #define WEST                12
 #define WEST_15             13
-#define WEST_NORTH          14
+#define WEST_NORTH          14  //North West
 #define WEST_60             15
 
-
-
 //collision detection definitions, add all registers
-#define P1PF                0xD005
-#define P0PF                0xD004
-#define M1PF                0xD001
-#define M0PF                0xD000
-#define M1P                 0xD009
-#define M0P                 0xD008
-
-#define HITCLR              0xD01E
+#define P1PF                0xD005         //Player 1 to playfield Collision Register    
+#define P0PF                0xD004         //Player 0 to Playfield Collision Register
+#define M1PF                0xD001         //Missile 1 to Playfield Collision Register
+#define M0PF                0xD000         //Missile 0 to Playfield Collision Register
+#define M1P                 0xD009         //Missile 1 to Player Collision Register
+#define M0P                 0xD008         //Missile 0 to Player Collision Register
+#define HITCLR              0xD01E         //Collsion Clear Register: Poking a 1 clears ALL collision registers
 
 /*
- * <-------------------- GLOBAL VARIABLES -------------------->
- */
-
+    ------------------------------------------- Global Variables ---------------------------------------------------
+*/
 //Different tank pictures to be printed
 unsigned int tankPics[16][8] = {
         {8,8,107,127,127,127,99,99},        //NORTH
@@ -61,7 +76,7 @@ unsigned int tankPics[16][8] = {
         {0,252,252,56,63,56,252,252},       //EAST
         {24,62,31,28,124,251,120,28},       //EAST_15
         {25,58,124,255,223,14,28,24},       //SOUTH_EAST
-        {4,14,78,255,255,121,36},               //EAST_60
+        {4,14,78,255,255,121,36},           //EAST_60
         {99,99,127,127,127,107,8,8},        //SOUTH
         {32,112,114,255,255,158,38,36},     //SOUTH_15
         {152,92,62,255,251,112,56,24},      //SOUTH_WEST
@@ -72,13 +87,39 @@ unsigned int tankPics[16][8] = {
         {36,38,158,255,255,114,112,32}      //WEST_60
 };
 
+//Character array to print charcters in Atari's character memory screen for Player 1
+int *characterSetP0[8] = {
+        (int*)0x0030,   //Character: P
+        (int*)0x0011,   //Character: 1
+        (int*)0x0000,   //Character:   - 'Space'
+        (int*)0x0037,   //Character: W
+        (int*)0x0029,   //Character: I
+        (int*)0x002E,   //Character: N
+        (int*)0x0033,   //Character: S
+        (int*)0x0001    //Character: !
+};
+
+//Character array to print charcters in Atari's character memory screen for Player 1
+int *characterSetP1[8] = {
+        (int*)0x0030,   //Character: P
+        (int*)0x0012,   //Character: 2
+        (int*)0x0000,   //Character:   - 'Space'
+        (int*)0x0037,   //Character: W
+        (int*)0x0029,   //Character: I
+        (int*)0x002E,   //Character: N
+        (int*)0x0033,   //Character: S
+        (int*)0x0001    //Character: !
+};
+
+//For loop counters (Doesnt matter what value is set to as for loop intializer will set/reset values)
 unsigned char j = 255;
+int i;
+
 unsigned char m0SoundTracker = 0;
 unsigned char m1SoundTracker = 0;
-int i;
 int frameDelayCounter = 0;
 
-//Adresses
+//Main display and graphics Adresses
 int bitMapAddress;
 int charMapAddress;
 int PMBaseAddress;
@@ -98,12 +139,14 @@ int *colLumPM1 = (int *)0x2C1;
 //Starting direction of each Players
 unsigned int p0Direction = EAST;
 unsigned int p1Direction = WEST;
+
+//Keep track of each player's moves
 unsigned char p0LastMove;
 unsigned char p1LastMove;
 unsigned char p0history;
 unsigned char p1history;
 
-//Starting vertical and horizontal position of players
+//Starting vertical and horizontal position of players (Use this varaibles when initializing game)
 const int verticalStartP0 = 131;
 const int horizontalStartP0 = 57;
 const int verticalStartP1 = 387;
@@ -115,15 +158,17 @@ int p0HorizontalLocation = 57;
 int p1VerticalLocation = 387;
 int p1HorizontalLocation = 190;
 
-//variables for missile tracking
+//Variables for tracking horizontal and vertical missile location 
 int m0LastHorizontalLocation;
 int m0LastVerticalLocation;
 int m1LastHorizontalLocation;
 int m1LastVerticalLocation;
+
+//Variables used for missile direction tracking
 int m0direction;
 int m1direction;
 
-//variables to keep track of tank firing
+//Variables to keep track of tank firing
 bool p0Fired = false;
 bool p1Fired = false;
 bool m0exists = false;
@@ -133,105 +178,101 @@ int p1FireDelayCounter = 0;
 bool p0FireAvailable = true;
 bool p1FireAvailable = true;
 
-//tank hit variables
+//Tank hit variables
 bool p0IsHit = false;
 bool p1IsHit = false;
 int p0HitDir = 0;
 int p1HitDir = 0;
 int hitTime[2] = {0, 0};
 
-//variables to delay tank diagonal movement
+//Variables to delay tank diagonal movement
 bool p0FirstDiag = false;
 bool p1FirstDiag = false;
 
-//scores
-//functions to turn and update tank positions
-int *characterSetP0[8] = {
-        (int*)0x0030,
-        (int*)0x0011,
-        (int*)0x0000,
-        (int*)0x0037,
-        (int*)0x0029,
-        (int*)0x002E,
-        (int*)0x0033,
-        (int*)0x0001
-};
+//player 1 and player 2 starting score display (0)
+int p0Score = 16;   // Character: 0
+int p1Score = 16;    // Character: 0
 
-int *characterSetP1[8] = {
-        (int*)0x0030,
-        (int*)0x0012,
-        (int*)0x0000,
-        (int*)0x0037,
-        (int*)0x0029,
-        (int*)0x002E,
-        (int*)0x0033,
-        (int*)0x0001
-};
-
-int p0Score = 16;
-int p1Score = 16;
-
-//variable to run the game, if it is false a user has won
+//Variable to run the game, if it is false a user has won
 bool gameOn = true;
 
 
 /*
- * <-------------------- FUNCTION DECLARATIONS -------------------->
- */
-//functions to be implemented
+    ----------------------------------------------- Function Declaration -------------------------------------------------------
+*/
+//Functions for initialziing and setting up display
 void rearrangingDisplayList();
 void initializeScore();
 void createBitMap();
 void enablePMGraphics();
 void setUpTankDisplay();
-void spinTank(int tank);
+
+//Functions for tank movements
 void movePlayers();
+void moveForward(int tank);
+void moveBackward(int tank);
+
+//Functions for missile movements
 void fire(int tank);
 void missileLocationHelper(unsigned int tankDirection, int pLastHorizontalLocation, int pLastVerticalLocation, int tank);
 void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank);
-void moveForward(int tank);
-void moveBackward(int tank);
+
+//Functions for collisions
 void checkCollision();
+
 //functions to turn and update tank positions
 void turnplayer(unsigned char turn, int player);
+void spinTank(int tank);
 void tankExplosion();
 void updateplayerDir(int player);
-void spawnPlayer(int player);
-void rotateAI();
+
+//TO DO: Function to be implemented
+//void rotateAI();
+
+
 
 /*
- * <-------------------- DRIVER MAIN -------------------->
- */
+    ----------------------------------------------- Main (Driver) -------------------------------------------------------
+*/
 int main() {
-    joy_load_driver(joy_stddrv);        //Load joystick driver
-    joy_install(joy_static_stddrv);     //Install joystick driver
+    //Loading and installing joystick driver
+    joy_load_driver(joy_stddrv);
+    joy_install(joy_static_stddrv);     
 
-    _graphics(
-            18);                      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
+    //Set Up Display Screen
+    _graphics(18);                      //Set default display to graphics 3 + 16 (+16 displays mode with graphics, eliminating the text window)
     rearrangingDisplayList();           //rearranging graphics 3 display list
     initializeScore();
-    createBitMap();
-    enablePMGraphics();
-    setUpTankDisplay();
-    while(true){
+    createBitMap();                     //Create bit map
+    enablePMGraphics();                 //Enable Player Missile Graphics
+    setUpTankDisplay();                 //Set up PLayer 1 and 2 Tank display
+
+    //First while loop to prevent program carshing in native hardware
+    while (true) {
         while (gameOn) {
             //Slows down character movement e.g. (60fps/5) = 12moves/second (it is actually slower than this for some reason)
-            if (frameDelayCounter == 5) {
+            if (frameDelayCounter == 5)
+            {
                 movePlayers();
-                //rotateAI();
                 frameDelayCounter = 0;
+
                 //if either of the players are hit, spin and move them, rather than letting them fire or move
                 if (p0IsHit && hitTime[0] > 0) spinTank(0);
                 if (p1IsHit && hitTime[1] > 0) spinTank(1);
-                if(j < 12){
+                
+                if(j < 12)
+                {
                     _sound(0, j , 8, 8);
                     j++;
                 }
-                if(j >= 12) _sound(0, 0, 0, 0);
+
+                if(j >= 12) _sound(0, 0, 0, 0); //Turn off sound register
             } else {
                 frameDelayCounter++;
             }
 
+
+            //Makes a firing sound when P1 presses the fire button
             if (p0Fired == true) {
                 m0SoundTracker++;
 
@@ -239,11 +280,12 @@ int main() {
                     _sound(0, m0SoundTracker, 8, 2);
                 } else if (m0SoundTracker == 15) {
                     m0SoundTracker = 0;
-                    _sound(0, 0, 0, 0);
+                    _sound(0, 0, 0, 0); //Turns off sound register for Audio Channel 0
                     p0Fired = false;
                 }
             }
 
+            //Makes a firing sound when P1 presses the fire button
             if (p1Fired == true) {
                 m1SoundTracker++;
 
@@ -251,7 +293,7 @@ int main() {
                     _sound(1, m1SoundTracker, 8, 2);
                 } else if (m1SoundTracker == 15) {
                     m1SoundTracker = 0;
-                    _sound(1, 0, 0, 0);
+                    _sound(1, 0, 0, 0); //Turns off sound register for Audio Channel 1
                     p1Fired = false;
                 }
             }
@@ -279,10 +321,14 @@ int main() {
                 traverseMissile(m1direction, m1LastHorizontalLocation, m1LastVerticalLocation, 1);
             }
 
+            //Checking Collision every single frame
             checkCollision();
             p1history = p1LastMove; //helps to fix collision bug
             p0history = p0LastMove; //helps to fix collision bug
 
+
+            //This condition will only be met when either player 1 or player 2 reaches the score of 9,
+            //or charcater 9 (which is 0x0019 in HEX located at Character Memory)
             if (p0Score == 25 || p1Score == 25) {
                 int tracker = 0;
 
@@ -312,8 +358,18 @@ int main() {
 /*
  * <-------------------- FUNCTION IMPLEMENTATIONS -------------------->
  */
+
+//------------------------------ rearrangingDisplayList ------------------------------
+// Purpose: Reconfigure the display list for graphics mode to ensure proper rendering.
+//          This function sets up the necessary parameters in the display list.
+//          It includes blank lines, character and screen memory configurations,
+//          and a jump instruction for vertical blank synchronization.
+//          The resulting display list must have a total of 192 scan lines.
+// Parameters: None
+// Preconditions: The OS object must be initialized with appropriate values.
+// Postconditions: The display list is modified as per the graphics mode requirements.
 void rearrangingDisplayList() {
-    unsigned int *DLIST_ADDRESS  = OS.sdlstl + OS.sdlsth*256;
+    unsigned int *DLIST_ADDRESS  = (OS.sdlstl + OS.sdlsth*256);
     unsigned char *DLIST = (unsigned char *)DLIST_ADDRESS;
 
     // Write the Display List for Graphics Mode
@@ -323,9 +379,9 @@ void rearrangingDisplayList() {
             DL_BLK8,
             DL_BLK8,
             DL_LMS(DL_CHR20x16x2),
-            0xE0, 0x9C,  // Charcater Memory
+            0xE0, 0x9C,  // Charcater Memory (Low Byte and High Byte)
             DL_LMS(DL_MAP40x8x4),
-            0xF4,0x9C,  //Screen memory
+            0xF4,0x9C,  //Screen memory (Low Byte and High Byte)
             DL_MAP40x8x4,
             DL_MAP40x8x4,
             DL_MAP40x8x4,
@@ -351,27 +407,42 @@ void rearrangingDisplayList() {
             0x4E, 0x9E  // Jump address (in this case, loop back to the start)
     };
 
-    int i;
-
     for (i = 0; i < 30; i++) {
         POKE(DLIST + i, displayList[i]);
     }
 
+    //Setting bit and character map address based on the modified display list 
     bitMapAddress = PEEK(DLIST+7) + PEEK(DLIST+8)*256;
     charMapAddress = PEEK(DLIST+4) + PEEK(DLIST+5)*256;
 }
 
+//------------------------------ initializeScore ------------------------------
+// Purpose: Creating a scoreboard that sets both player's score
+// Parameters: None
+// Preconditions: None
+// Postconditions: The display list will have a score board that sets both player's
+//                 score to 0.
 void initializeScore() {
     //Temp code
     POKE(charMapAddress + 5, 16);
     POKE(charMapAddress + 14, 16);
 }
 
+//------------------------------ updatePlayerScore ------------------------------
+// Purpose: Update player's score based on collisions
+// Parameters: None
+// Preconditions: Tank to missile collision must be true
+// Postconditions: The scoreboard will be updated
 void updatePlayerScore() {
     POKE(charMapAddress + 5, p0Score);
     POKE(charMapAddress + 14, p1Score);
 }
 
+//------------------------------ createBitMap ------------------------------
+// Purpose: Create bit map (Sprites and Borders)
+// Parameters: None
+// Preconditions: None
+// Postconditions: Bit Map will be created
 void createBitMap() {
     //Making the top and bottom border
     for (i = 0; i < 10; i++)
@@ -435,6 +506,12 @@ void createBitMap() {
     POKE(0x2C5, 26);    //Sets bitmap color to yellow
 }
 
+//------------------------------ enablePMGraphics ------------------------------
+// Purpose: Turning on and initializing Player Missile Graphics with the correct
+//          addresses
+// Parameters: None
+// Preconditions: None
+// Postconditions: player and missile base address will be intialized
 void enablePMGraphics() {
     POKE(0x22F, 62);                    //Enable Player-Missile DMA single line
     PMBaseAddress = 0x2800;             //the player-missile base address
@@ -456,6 +533,13 @@ void enablePMGraphics() {
     }
 }
 
+//------------------------------ setUpTankDisplay ------------------------------
+// Purpose: Setting up tank displays for both players
+// Parameters: None
+// Preconditions: None
+// Postconditions: Tank for Player 1 will be created and set to point North East
+//                 behind sprite. Tank for Player 2 will be created and set to
+//                 point South West behind sprite.
 void setUpTankDisplay() {
     int counter = 0;
 
@@ -480,7 +564,7 @@ void setUpTankDisplay() {
     counter = 0;
 }
 
-//moving based off of joystick input, or firing the tank if the player chooses
+//------------------------------ movePlayers ------------------------------
 void movePlayers(){
     //joystick code
     unsigned char player0move = joy_read(JOY_1);
@@ -513,350 +597,404 @@ void movePlayers(){
 
 }
 
-//rotating the player
+//------------------------------ turnPlayer ------------------------------
+// Purpose: Changes the direction of the specified player's tank based on joystick input.
+//          This function handles tank direction changes, taking into account joystick input
+//          and special cases for smooth and intuitive tank movement.
+// Parameters:
+//   turn - The joystick input indicating the desired direction change.
+//   player - The player identifier (0 or 1) indicating which tank's direction to change.
+// Preconditions: The player's current direction and joystick input must be correctly set.
+// Postconditions: The player's tank direction is updated according to the joystick input.
 void turnplayer(unsigned char turn, int player){
     //for player 1
-    if(player == 0){
+    if (player == 0) {
         //handling edge cases
-        if(p0Direction == WEST_60 && JOY_RIGHT(turn)){
+        if (p0Direction == WEST_60 && JOY_RIGHT(turn)) {
             p0Direction = NORTH;
-        }
-        else if(p0Direction == NORTH && JOY_LEFT(turn)){
+        } else if (p0Direction == NORTH && JOY_LEFT(turn)) {
             p0Direction = WEST_60;
         }
-            //if the joystick is left,
+
+        //if the joystick is left,
         else if(JOY_LEFT(turn)){
             p0Direction = p0Direction - 1;
         }
-            //if the joystick is right
+        
+        //if the joystick is right
         else if(JOY_RIGHT(turn)){
             p0Direction = p0Direction + 1;
         }
+
         updateplayerDir(0);
     }
-        //for player 2
-    else if(player == 1){
-        if(p1Direction == WEST_60 && JOY_RIGHT(turn)){
+    
+    //for player 2
+    else if (player == 1) {
+        if (p1Direction == WEST_60 && JOY_RIGHT(turn)) {
             p1Direction = NORTH;
         }
-        else if(p1Direction == NORTH && JOY_LEFT(turn)){
+        else if (p1Direction == NORTH && JOY_LEFT(turn)) {
             p1Direction = WEST_60;
         }
-            //if the joystick is left,
-        else if(JOY_LEFT(turn)){
+        
+        //if the joystick is left,
+        else if (JOY_LEFT(turn)) {
             p1Direction = p1Direction - 1;
         }
-            //if the joystick is right
+
+        //if the joystick is right
         else if(JOY_RIGHT(turn)){
             p1Direction = p1Direction + 1;
         }
+
         updateplayerDir(1);
     }
 }
 
-//updating the player's orientation, or position
+//------------------------------ updatePlayerDir ------------------------------
+// Purpose: Updates the visual representation of the specified player's tank.
+//          This function refreshes the display of the tank sprite based on its
+//          current direction, ensuring smooth animation.
+// Parameters:
+//   player - The player identifier (0 or 1) indicating which tank's sprite to update.
+// Preconditions: The player's current direction, position, and tank sprite array (tankPics)
+//                must be correctly set.
+// Postconditions: The tank sprite on the screen reflects the updated direction.
 void updateplayerDir(int player){
     //updating player 1
-    if(player == 0){
-        if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH){
+    if (player == 0) {
+        if (p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH) {
             int counter = 7;
-            for(i = p0VerticalLocation; i < p0VerticalLocation + 8; i++){
+            for (i = p0VerticalLocation; i < p0VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p0Direction][counter]);
                 counter--;
             }
-        }
-        else{
+        } else {
             int counter = 0;
-            for(i = p0VerticalLocation; i < p0VerticalLocation + 8; i++){
+            for (i = p0VerticalLocation; i < p0VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p0Direction][counter]);
                 counter++;
             }
         }
     }
 
-        //updating player 2
-    else if(player == 1){
-        if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH){
+    //updating player 2
+    else if (player == 1) {
+        if (p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH) {
             int counter = 7;
-            for(i = p1VerticalLocation; i < p1VerticalLocation + 8; i++){
+            for (i = p1VerticalLocation; i < p1VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p1Direction][counter]);
                 counter--;
             }
-        }
-        else{
+        } else {
             int counter = 0;
-            for(i = p1VerticalLocation; i < p1VerticalLocation + 8; i++){
+            for (i = p1VerticalLocation; i < p1VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p1Direction][counter]);
                 counter++;
             }
         }
     }
-
 }
 
-//move the tank forward
+//------------------------------ moveForward ------------------------------
+// Purpose: Move the tank forward in the specified direction.
+//          This function updates the tank's position based on its current
+//          direction and ensures smooth movement, including diagonal cases.
+// Parameters:
+//   tank - The tank identifier (0 or 1) indicating which tank to move.
+// Preconditions: The tank's direction, position, and related variables must be set.
+// Postconditions: The tank's position is updated to move it forward in the specified direction.
 void moveForward(int tank){
     //moving forward tank 1--------------------------------
-    if(tank == 0){
+    if (tank == 0) {
         p0FirstDiag = false;
+
         //movement for north
-        if(p0Direction == NORTH){
+        if (p0Direction == NORTH) {
             POKE(playerAddress+(p0VerticalLocation+7), 0);
             p0VerticalLocation--;
 
         }
+
         //movement for south
-        if(p0Direction == SOUTH){
+        if (p0Direction == SOUTH) {
             POKE(playerAddress+p0VerticalLocation, 0);
             p0VerticalLocation++;
         }
+
         //movement north-ish cases
-        if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == WEST_NORTH || p0Direction == WEST_60){
+        if (p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == WEST_NORTH || p0Direction == WEST_60) {
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
-            if(p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
+            if (p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
+            if (p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
+
             //Y ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
-            if(p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
-            if(p0Direction < 4) p0HorizontalLocation = p0HorizontalLocation + x;
+            if (p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
+            if (p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
+            if (p0Direction < 4) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p0VerticalLocation +7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         //movement south-ish cases
-        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60){
+        if (p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60) {
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
-            if(p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
+            if (p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
+            if (p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
+
             //Y ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
-            if(p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
-            if(p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation + x;
+            if (p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
+            if (p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
+            if (p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation +1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         //movement west
-        if(p0Direction == WEST){
+        if (p0Direction == WEST) {
             p0HorizontalLocation--;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         //movement east
-        if(p0Direction == EAST){
+        if (p0Direction == EAST) {
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         updateplayerDir(0);
     }
 
-
-
-        //moving forward tank 2------------------------------
-    else if(tank == 1){
+    //moving forward tank 2------------------------------
+    else if (tank == 1) {
         p1FirstDiag = false;
+
         //movement for north
-        if(p1Direction == NORTH){
+        if (p1Direction == NORTH) {
             POKE(playerAddress+(p1VerticalLocation+7), 0);
             p1VerticalLocation--;
-
         }
+
         //movement for south
-        if(p1Direction == SOUTH){
+        if (p1Direction == SOUTH) {
             POKE(playerAddress+p1VerticalLocation, 0);
             p1VerticalLocation++;
         }
+
         //movement north-ish cases
-        if(p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60){
+        if (p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60) {
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_15 || p1Direction == WEST_60) x = 1;
-            if(p1Direction == NORTH_60 || p1Direction == WEST_15) x = 2;
+            if (p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_15 || p1Direction == WEST_60) x = 1;
+            if (p1Direction == NORTH_60 || p1Direction == WEST_15) x = 2;
+
             //Y ifs
-            if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
-            if(p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
-            if(p1Direction < 4) p1HorizontalLocation = p1HorizontalLocation + x;
+            if (p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
+            if (p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
+            if (p1Direction < 4) p1HorizontalLocation = p1HorizontalLocation + x;
             else p1HorizontalLocation = p1HorizontalLocation - x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p1VerticalLocation +7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         //movement south-ish cases
-        if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
+        if (p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60) {
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_15 || p1Direction == EAST_60) x = 1;
-            if(p1Direction == SOUTH_60 || p1Direction == EAST_15) x = 2;
+            if (p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_15 || p1Direction == EAST_60) x = 1;
+            if (p1Direction == SOUTH_60 || p1Direction == EAST_15) x = 2;
+
             //Y ifs
-            if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_60 || p1Direction == EAST_15) y = 1;
-            if(p1Direction == SOUTH_15 || p1Direction == EAST_60) y = 2;
-            if(p1Direction < 8) p1HorizontalLocation = p1HorizontalLocation + x;
+            if (p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_60 || p1Direction == EAST_15) y = 1;
+            if (p1Direction == SOUTH_15 || p1Direction == EAST_60) y = 2;
+            if (p1Direction < 8) p1HorizontalLocation = p1HorizontalLocation + x;
             else p1HorizontalLocation = p1HorizontalLocation - x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation +1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         //movement west
-        if(p1Direction == WEST){
+        if (p1Direction == WEST) {
             p1HorizontalLocation--;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         //movement east
-        if(p1Direction == EAST){
+        if (p1Direction == EAST) {
             p1HorizontalLocation++;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         updateplayerDir(1);
     }
 }
 
-//move the tank backward
-void moveBackward(int tank){
+//------------------------------ moveBackward ------------------------------
+// Purpose: Move the tank backward in the specified direction.
+//          This function updates the tank's position based on its current
+//          direction and ensures smooth movement, including diagonal cases.
+// Parameters:
+//   tank - The tank identifier (0 or 1) indicating which tank to move.
+// Preconditions: The tank's direction, position, and related variables must be set.
+// Postconditions: The tank's position is updated to move it backward in the specified direction.
+void moveBackward(int tank) {
     //moving backward tank 1-------------------------------
-    if(tank == 0){
+    if (tank == 0) {
         p0FirstDiag = false;
+
         //movement for north
-        if(p0Direction == NORTH){
+        if (p0Direction == NORTH) {
             POKE(playerAddress+p0VerticalLocation, 0);
             p0VerticalLocation++;
         }
+
         //movement for south
         if(p0Direction == SOUTH){
             POKE(playerAddress+(p0VerticalLocation+7), 0);
             p0VerticalLocation--;
         }
+
         //movement north-ish cases
         if(p0Direction == NORTH_15 || p0Direction == NORTH_60 || p0Direction == NORTH_EAST || p0Direction == WEST_15 || p0Direction == WEST_NORTH || p0Direction == WEST_60){
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
-            if(p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
+            if (p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_15 || p0Direction == WEST_60) x = 1;
+            if (p0Direction == NORTH_60 || p0Direction == WEST_15) x = 2;
+
             //Y ifs
-            if(p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
-            if(p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
-            if(p0Direction > 4) p0HorizontalLocation = p0HorizontalLocation + x;
+            if (p0Direction == NORTH_EAST || p0Direction == WEST_NORTH || p0Direction == NORTH_60 || p0Direction == WEST_15) y = 1;
+            if (p0Direction == NORTH_15 || p0Direction == WEST_60) y = 2;
+            if (p0Direction > 4) p0HorizontalLocation = p0HorizontalLocation + x;
             else p0HorizontalLocation = p0HorizontalLocation - x;
-            //x = -2, -1, 1, 2
-            //y = 2, 1
 
             POKE(playerAddress+(p0VerticalLocation), 0);
             POKE(playerAddress+(p0VerticalLocation + 1), 0);
             p0VerticalLocation = p0VerticalLocation + y;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
-
         }
+        
         //movement south-ish cases
-        if(p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60){
+        if (p0Direction == SOUTH_15 || p0Direction == SOUTH_60 || p0Direction == SOUTH_WEST || p0Direction == EAST_15 || p0Direction == EAST_SOUTH || p0Direction == EAST_60){
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
-            if(p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
+            if (p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_15 || p0Direction == EAST_60) x = 1;
+            if (p0Direction == SOUTH_60 || p0Direction == EAST_15) x = 2;
+
             //Y ifs
-            if(p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
-            if(p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
-            if(p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation - x;
+            if (p0Direction == SOUTH_WEST || p0Direction == EAST_SOUTH || p0Direction == SOUTH_60 || p0Direction == EAST_15) y = 1;
+            if (p0Direction == SOUTH_15 || p0Direction == EAST_60) y = 2;
+            if (p0Direction < 8) p0HorizontalLocation = p0HorizontalLocation - x;
             else p0HorizontalLocation = p0HorizontalLocation + x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p0VerticalLocation + 7), 0);
             POKE(playerAddress+(p0VerticalLocation +6), 0);
             p0VerticalLocation = p0VerticalLocation - y;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         //movement west
-        if(p0Direction == WEST){
+        if (p0Direction == WEST){
             p0HorizontalLocation++;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         //movement east
-        if(p0Direction == EAST){
+        if (p0Direction == EAST){
             p0HorizontalLocation--;
             POKE(horizontalRegister_P0, p0HorizontalLocation);
         }
+
         updateplayerDir(0);
     }
 
 
     //moving backward tank 2-------------------------------
-    if(tank == 1){
+    if (tank == 1) {
         p1FirstDiag = false;
+
         //movement for north
-        if(p1Direction == NORTH){
+        if (p1Direction == NORTH) {
             POKE(playerAddress+p1VerticalLocation, 0);
             p1VerticalLocation++;
         }
+
         //movement for south
-        if(p1Direction == SOUTH){
+        if (p1Direction == SOUTH) {
             POKE(playerAddress+(p1VerticalLocation+7), 0);
             p1VerticalLocation--;
         }
+
         //movement north-ish cases
-        if(p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60){
+        if (p1Direction == NORTH_15 || p1Direction == NORTH_60 || p1Direction == NORTH_EAST || p1Direction == WEST_15 || p1Direction == WEST_NORTH || p1Direction == WEST_60) {
             int x = 0;
             int y = 0;
+
             //X ifs
-            if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_15 || p1Direction == WEST_60) x = 1;
-            if(p1Direction == NORTH_60 || p1Direction == WEST_15) x = 2;
+            if (p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_15 || p1Direction == WEST_60) x = 1;
+            if (p1Direction == NORTH_60 || p1Direction == WEST_15) x = 2;
+
             //Y ifs
-            if(p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
-            if(p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
-            if(p1Direction > 4) p1HorizontalLocation = p1HorizontalLocation + x;
+            if (p1Direction == NORTH_EAST || p1Direction == WEST_NORTH || p1Direction == NORTH_60 || p1Direction == WEST_15) y = 1;
+            if (p1Direction == NORTH_15 || p1Direction == WEST_60) y = 2;
+            if (p1Direction > 4) p1HorizontalLocation = p1HorizontalLocation + x;
             else p1HorizontalLocation = p1HorizontalLocation - x;
-            //x = -2, -1, 1, 2
-            //y = 2, 1
 
             POKE(playerAddress+(p1VerticalLocation), 0);
             POKE(playerAddress+(p1VerticalLocation + 1), 0);
             p1VerticalLocation = p1VerticalLocation + y;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
-
         }
+
         //movement south-ish cases
         if(p1Direction == SOUTH_15 || p1Direction == SOUTH_60 || p1Direction == SOUTH_WEST || p1Direction == EAST_15 || p1Direction == EAST_SOUTH || p1Direction == EAST_60){
             int x = 0;
             int y = 0;
+
             //X ifs
             if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_15 || p1Direction == EAST_60) x = 1;
             if(p1Direction == SOUTH_60 || p1Direction == EAST_15) x = 2;
+
             //Y ifs
             if(p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH || p1Direction == SOUTH_60 || p1Direction == EAST_15) y = 1;
             if(p1Direction == SOUTH_15 || p1Direction == EAST_60) y = 2;
             if(p1Direction < 8) p1HorizontalLocation = p1HorizontalLocation - x;
             else p1HorizontalLocation = p1HorizontalLocation + x;
-            //x possible outcomes = -2, -1, 1, 2
-            //y possible outcomes = 2, 1
 
             POKE(playerAddress+(p1VerticalLocation + 7), 0);
             POKE(playerAddress+(p1VerticalLocation +6), 0);
             p1VerticalLocation = p1VerticalLocation - y;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         //movement west
         if(p1Direction == WEST){
             p1HorizontalLocation++;
@@ -867,22 +1005,26 @@ void moveBackward(int tank){
             p1HorizontalLocation--;
             POKE(horizontalRegister_P1, p1HorizontalLocation);
         }
+
         updateplayerDir(1);
     }
 }
 
-void checkBorders(){
+//------------------------------ checkBorders ------------------------------
+void checkBorders() {
     //variables to make sure that they don't just jump back across the screen (doesn't trigger as move up right after move down)
     bool movedLeft0 = false;
     bool movedLeft1 = false;
     bool movedup0 = false;
     bool movedup1 = false;
+
     //if they are too far to the left
     if(p0HorizontalLocation <= 50 && p0IsHit){
         movedLeft0 = true;
         p0HorizontalLocation = 195;
         POKE(horizontalRegister_P0, p0HorizontalLocation);
     }
+
     if(p1HorizontalLocation <= 50 && p1IsHit){
         movedLeft1 = true;
         p1HorizontalLocation = 195;
@@ -894,6 +1036,7 @@ void checkBorders(){
         p0HorizontalLocation = 50;
         POKE(horizontalRegister_P0, p0HorizontalLocation);
     }
+
     if(p1HorizontalLocation >= 195 && p1IsHit && !movedLeft1){
         p1HorizontalLocation = 50;
         POKE(horizontalRegister_P1, p1HorizontalLocation);
@@ -902,27 +1045,20 @@ void checkBorders(){
     //if they're too far up
     if(p0VerticalLocation <= 57 && p0IsHit){
         //delete player from upper location
-        POKE(playerAddress+p0VerticalLocation, 0);
-        POKE(playerAddress+(p0VerticalLocation + 1), 0);
-        POKE(playerAddress+(p0VerticalLocation + 2), 0);
-        POKE(playerAddress+(p0VerticalLocation + 3), 0);
-        POKE(playerAddress+(p0VerticalLocation + 4), 0);
-        POKE(playerAddress+(p0VerticalLocation + 5), 0);
-        POKE(playerAddress+(p0VerticalLocation + 6), 0);
-        POKE(playerAddress+(p0VerticalLocation + 7), 0);
+        for (i = 0; i < 8; i++) {
+            POKE(playerAddress+(p0VerticalLocation + i), 0);
+        }
+
         //add them to lower location
         p0VerticalLocation = 207;
         movedup0 = true;
     }
     if(p1VerticalLocation <= 312 && p1IsHit){
         //delete player from upper location
-        POKE(playerAddress+p1VerticalLocation, 0);
-        POKE(playerAddress+(p1VerticalLocation + 1), 0);
-        POKE(playerAddress+(p1VerticalLocation + 2), 0);
-        POKE(playerAddress+(p1VerticalLocation + 3), 0);
-        POKE(playerAddress+(p1VerticalLocation + 4), 0);
-        POKE(playerAddress+(p1VerticalLocation + 5), 0);
-        POKE(playerAddress+(p1VerticalLocation + 6), 0);
+        for (i = 0; i < 8; i++) {
+            POKE(playerAddress+(p1VerticalLocation + i), 0);
+        }
+
         POKE(playerAddress+(p1VerticalLocation + 7), 0);
         //add them to lower location
         p1VerticalLocation = 464;
@@ -932,32 +1068,25 @@ void checkBorders(){
     //if they're too far down
     if(p0VerticalLocation >= 207 && p0IsHit && !movedup0){
         //delete player at lower location
-        POKE(playerAddress+p0VerticalLocation, 0);
-        POKE(playerAddress+(p0VerticalLocation + 1), 0);
-        POKE(playerAddress+(p0VerticalLocation + 2), 0);
-        POKE(playerAddress+(p0VerticalLocation + 3), 0);
-        POKE(playerAddress+(p0VerticalLocation + 4), 0);
-        POKE(playerAddress+(p0VerticalLocation + 5), 0);
-        POKE(playerAddress+(p0VerticalLocation + 6), 0);
-        POKE(playerAddress+(p0VerticalLocation + 7), 0);
+        for (i = 0; i < 8; i++) {
+            POKE(playerAddress+(p0VerticalLocation + i), 0);
+        }
+
         //add them to upper location
         p0VerticalLocation = 57;
     }
     if(p1VerticalLocation >= 464 && p1IsHit && !movedup1){
         //delete player at lower location
-        POKE(playerAddress+p1VerticalLocation, 0);
-        POKE(playerAddress+(p1VerticalLocation + 1), 0);
-        POKE(playerAddress+(p1VerticalLocation + 2), 0);
-        POKE(playerAddress+(p1VerticalLocation + 3), 0);
-        POKE(playerAddress+(p1VerticalLocation + 4), 0);
-        POKE(playerAddress+(p1VerticalLocation + 5), 0);
-        POKE(playerAddress+(p1VerticalLocation + 6), 0);
-        POKE(playerAddress+(p1VerticalLocation + 7), 0);
+        for (i = 0; i < 8; i++) {
+            POKE(playerAddress+(p1VerticalLocation + i), 0);
+        }
+
         //add them to upper location
         p1VerticalLocation = 312;
     }
 }
 
+//------------------------------ spinTank ------------------------------
 void spinTank(int tank){
 
     //if player 1 is hit
@@ -1047,6 +1176,7 @@ void spinTank(int tank){
     checkBorders();
 }
 
+//------------------------------ checkCollision ------------------------------
 //add a check to the collision registers, and act if they're triggered (not finished)
 void checkCollision(){
     //checking for player 1 to playfield collision
@@ -1115,7 +1245,16 @@ void checkCollision(){
     POKE(HITCLR, 1); // Clear ALL of the Collision Registers
 }
 
-//fire a projectile from the tank
+//------------------------------ fire ------------------------------
+// Purpose: Launches a projectile from the specified tank.
+//          This function sets up and fires a projectile in the direction of the tank.
+// Parameters:
+//   tank - The tank identifier (0 or 1) indicating which tank is firing.
+// Preconditions: The tank's direction, position, missile existence, and fire availability
+//                must be appropriately configured.
+// Postconditions: A projectile is launched from the tank, and its existence is marked
+//                 until a collision occurs. Fire availability is temporarily disabled to
+//                 prevent rapid firing.
 void fire(int tank){
     if (tank == 0)
     {
@@ -1133,343 +1272,191 @@ void fire(int tank){
     }
 }
 
-//This function is just to determine where the missile should be poked at. It tracks the locations of the tank and
-//sets up the missile to be located at the tank's barrel
+//------------------------------ missileLocationHelper ------------------------------
+// Purpose: This function determines the target location for a missile launch. It tracks
+//          the current position of the tank and sets up the missile's position to be at
+//          the tip of the tank's barrel.
+// 
+// Parameters:
+//   tankDirection - The direction in which the tank is facing.
+//   pHorizontalLocation - The horizontal position of the tank being passed in.
+//   pVerticalLocation - The vertical position of the tank being passed in.
+//   tank - The tank identifier (0 or 1).
+//
+// Preconditions: None
+// Postconditions: The missile's launch position is set according to the tank's
+//                 orientation.
 void missileLocationHelper(unsigned int tankDirection, int pHorizontalLocation, int pVerticalLocation, int tank)
 {
     int mdirection;
     int mLastHorizontalLocation = 0;
     int mLastVerticalLocation = 0;
 
-    if (tankDirection == NORTH)
-    {
+    if (tankDirection == NORTH) {
         mLastHorizontalLocation = pHorizontalLocation+4;
         mLastVerticalLocation = pVerticalLocation;
         mdirection = NORTH;
-    }
-    else if (tankDirection == NORTH_15)
-    {
+    } else if (tankDirection == NORTH_15) {
         mLastHorizontalLocation = pHorizontalLocation+5;
         mLastVerticalLocation = pVerticalLocation;
         mdirection = NORTH_15;
-    }
-    else if (tankDirection == NORTH_EAST)
-    {
+    } else if (tankDirection == NORTH_EAST) {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation;
         mdirection = NORTH_EAST;
-    }
-    else if (tankDirection == NORTH_60)
-    {
+    } else if (tankDirection == NORTH_60) {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+2;
         mdirection = NORTH_60;
-    }
-    else if (tankDirection == EAST)
-    {
+    } else if (tankDirection == EAST) {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+4;
         mdirection = EAST;
-    }
-    else if (tankDirection == EAST_15)
-    {
+    } else if (tankDirection == EAST_15) {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+5;
         mdirection = EAST_15;
-    }
-    else if (tankDirection == EAST_SOUTH)
-    {
+    } else if (tankDirection == EAST_SOUTH) {
         mLastHorizontalLocation = pHorizontalLocation+7;
         mLastVerticalLocation = pVerticalLocation+7;
         mdirection = EAST_SOUTH;
-    }
-    else if (tankDirection == EAST_60)
-    {
+    } else if (tankDirection == EAST_60) {
         mLastHorizontalLocation = pHorizontalLocation+5;
         mLastVerticalLocation = pVerticalLocation+7;
         mdirection = EAST_60;
-    }
-    else if (tankDirection == SOUTH)
-    {
+    } else if (tankDirection == SOUTH) {
         mLastHorizontalLocation = pHorizontalLocation+4;
         mLastVerticalLocation = pVerticalLocation+7;
         mdirection = SOUTH;
-    }
-    else if (tankDirection == SOUTH_15)
-    {
+    } else if (tankDirection == SOUTH_15) {
         mLastHorizontalLocation = pHorizontalLocation+2;
         mLastVerticalLocation = pVerticalLocation+7;
         mdirection = SOUTH_15;
-    }
-    else if (tankDirection == SOUTH_WEST)
-    {
+    } else if (tankDirection == SOUTH_WEST) {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+7;
         mdirection = SOUTH_WEST;
-    }
-    else if (tankDirection == SOUTH_60)
-    {
+    } else if (tankDirection == SOUTH_60) {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+5;
         mdirection = SOUTH_60;
-    }
-    else if (tankDirection == WEST)
-    {
+    } else if (tankDirection == WEST) {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+4;
         mdirection = WEST;
-    }
-    else if (tankDirection == WEST_15)
-    {
+    } else if (tankDirection == WEST_15) {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation+2;
         mdirection = WEST_15;
-    }
-    else if (tankDirection == WEST_NORTH)
-    {
+    } else if (tankDirection == WEST_NORTH) {
         mLastHorizontalLocation = pHorizontalLocation;
         mLastVerticalLocation = pVerticalLocation;
         mdirection = WEST_NORTH;
-    }
-    else if (tankDirection == WEST_60)
-    {
+    } else if (tankDirection == WEST_60) {
         mLastHorizontalLocation = pHorizontalLocation+2;
         mLastVerticalLocation = pVerticalLocation+2;
         mdirection = WEST_60;
     }
 
     //Update missile location based on which player is being passed in
-    if (tank == 0)
-    {
+    if (tank == 0) {
         m0LastHorizontalLocation = mLastHorizontalLocation;
         m0LastVerticalLocation = mLastVerticalLocation;
         m0direction = mdirection;
-    }
-    else if (tank == 1)
-    {
+    } else if (tank == 1) {
         m1LastHorizontalLocation = mLastHorizontalLocation;
-        m1LastVerticalLocation = mLastVerticalLocation - 256;
+        m1LastVerticalLocation = mLastVerticalLocation - 256; //-256 because in RAM, the vertical position of player 1 ranges from 257 - 512
         m1direction = mdirection;
     }
 }
 
-//This function is to poke and start the animation, moving the missile until collision is true
+//------------------------------ traverseMissile ------------------------------
+// Purpose: Initiates and animates missile movement, advancing it until a collision
+//          occurs. The function continuously updates the missile's position while
+//          allowing for simultaneous tank movement.
+//
+// Parameters:
+//   missileDirection - The direction in which the missile is fired.
+//   mHorizontalLocation - The horizontal position of the missile.
+//   mVerticalLocation - The vertical position of the missile.
+//   tank - The tank identifier.
+// Preconditions: None
+// Postconditions: The missile animation progresses, considering tank movement.
 void traverseMissile(unsigned int missileDirection, int mHorizontalLocation, int mVerticalLocation, int tank)
 {
+    //Clear up any existing missiles in memory
     POKE(missileAddress+mVerticalLocation, 0);
 
-    if (missileDirection == NORTH)
-    {
+    if (missileDirection == NORTH) {
         mVerticalLocation--;
     }
-    else if (missileDirection == NORTH_15)
-    {
+    else if (missileDirection == NORTH_15) {
         mVerticalLocation -= 2;
         mHorizontalLocation++;
-    }
-    else if (missileDirection == NORTH_EAST)
-    {
+    } else if (missileDirection == NORTH_EAST) {
         mVerticalLocation--;
         mHorizontalLocation++;
-    }
-    else if (missileDirection == NORTH_60)
-    {
+    } else if (missileDirection == NORTH_60) {
         mVerticalLocation--;
         mHorizontalLocation += 2;
-    }
-    else if (missileDirection == EAST)
-    {
+    } else if (missileDirection == EAST) {
         mHorizontalLocation++;
-    }
-    else if (missileDirection == EAST_15)
-    {
+    } else if (missileDirection == EAST_15) {
         mVerticalLocation++;
         mHorizontalLocation += 2;
-    }
-    else if (missileDirection == EAST_SOUTH)
-    {
+    } else if (missileDirection == EAST_SOUTH) {
         mVerticalLocation++;
         mHorizontalLocation++;
-    }
-    else if (missileDirection == EAST_60)
-    {
+    } else if (missileDirection == EAST_60) {
         mVerticalLocation += 2;
         mHorizontalLocation++;
-    }
-    else if (missileDirection == SOUTH)
-    {
+    } else if (missileDirection == SOUTH) {
         mVerticalLocation++;
-    }
-    else if (missileDirection == SOUTH_15)
-    {
+    } else if (missileDirection == SOUTH_15) {
         mVerticalLocation += 2;
         mHorizontalLocation--;
-    }
-    else if (missileDirection == SOUTH_WEST)
-    {
+    } else if (missileDirection == SOUTH_WEST) {
         mVerticalLocation++;
         mHorizontalLocation--;
-    }
-    else if (missileDirection == SOUTH_60)
-    {
+    } else if (missileDirection == SOUTH_60) {
         mVerticalLocation++;
         mHorizontalLocation -= 2;
-    }
-    else if (missileDirection == WEST)
-    {
+    } else if (missileDirection == WEST) {
         mHorizontalLocation--;
-    }
-    else if (missileDirection == WEST_15)
-    {
+    } else if (missileDirection == WEST_15) {
         mVerticalLocation--;
         mHorizontalLocation -= 2;
-    }
-    else if (missileDirection == WEST_NORTH)
-    {
+    } else if (missileDirection == WEST_NORTH) {
         mVerticalLocation--;
         mHorizontalLocation--;
-    }
-    else if (missileDirection == WEST_60)
-    {
+    } else if (missileDirection == WEST_60) {
         mVerticalLocation -= 2;
         mHorizontalLocation--;
     }
 
-
-    if (tank == 0)
-    {
+    if (tank == 0) {
         m0LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m0LastVerticalLocation = mVerticalLocation; //saving new location to global variables
 
         POKE(horizontalRegister_M0, mHorizontalLocation);
 
-        if (m0LastVerticalLocation == m1LastVerticalLocation && m1exists == true)
-        {
-            POKE(missileAddress+mVerticalLocation, 10);
+        //If both missile exists (both are fired)
+        if (m0LastVerticalLocation == m1LastVerticalLocation && m1exists == true) {
+            POKE(missileAddress+mVerticalLocation, 10); //Turn on missiles for both players
+        } else {
+            POKE(missileAddress+mVerticalLocation, 2); //Else only turn on missile for Player 1
         }
-        else
-        {
-            POKE(missileAddress+mVerticalLocation, 2);
-        }
-    }
-    else if (tank == 1)
-    {
+    } else if (tank == 1) {
         m1LastHorizontalLocation = mHorizontalLocation; //saving new location to global variables
         m1LastVerticalLocation = mVerticalLocation; //saving new location to global variables
 
         POKE(horizontalRegister_M1, mHorizontalLocation);
 
-        if (m1LastVerticalLocation == m0LastVerticalLocation && m0exists == true)
-        {
-            POKE(missileAddress+mVerticalLocation, 10);
-        }
-        else
-        {
-            POKE(missileAddress+mVerticalLocation, 8);
+        //If both missile exists (both are fired)
+        if (m1LastVerticalLocation == m0LastVerticalLocation && m0exists == true) {
+            POKE(missileAddress+mVerticalLocation, 10); //Turn on missiles for both players
+        } else {
+            POKE(missileAddress+mVerticalLocation, 2); //Else only turn on missile for Player 2
         }
     }
 }
-
-void rotateAI()
-{   
-    int diffx;
-    int diffy;
-
-    missileLocationHelper(p1Direction, p1HorizontalLocation, p1VerticalLocation, 1);
-
-    // diffX = m1LastHorizontalLocation - p0HorizontalLocation+4;
-    // diffy = m1LastVerticalLocation - p0VerticalLocation+4;
-    // gradient = (-1000 * diffy) / diffX;
-    diffx = p0HorizontalLocation - m1LastHorizontalLocation; //a
-    diffy = p0VerticalLocation - m1LastVerticalLocation; //b
-
-    if (diffx < 0)
-    {
-        if (diffy == 0)
-        {
-            p1Direction = WEST;
-        }
-        else if (diffy < 0)
-        {
-            if (diffx < diffy)
-            {
-                p1Direction = WEST_15;
-            } 
-            else if (diffx = diffy)
-            {
-                p1Direction = WEST_NORTH;
-            }
-            else if (diffx > diffy)
-            {
-                p1Direction = WEST_60;
-            }
-        }
-        else if (diffy > 0)
-        {
-            if (diffx > diffy)
-            {
-                p1Direction = SOUTH_15;
-            }
-            else if (diffx == diffy)
-            {
-                p1Direction = SOUTH_WEST;
-            }
-            else if (diffx < diffy)
-            {
-                p1Direction = SOUTH_60;
-            }
-        }
-    }
-    else if (diffx > 0)
-    {   
-        if (diffy = 0)
-        {
-            p1Direction = EAST;
-        }
-        else if (diffy < 0)
-        {
-            if (diffx > diffy)
-            {
-                p1Direction = NORTH_15;
-            } 
-            else if (diffx = diffy)
-            {
-                p1Direction = NORTH_EAST;
-            }
-            else if (diffx < diffy)
-            {
-                p1Direction = NORTH_60;
-            }
-        }
-        else if (diffy > 0)
-        {
-            if (diffx > diffy)
-            {
-                p1Direction = EAST_15;
-            }
-            else if (diffx == diffy)
-            {
-                p1Direction = EAST_SOUTH;
-            }
-            else if (diffx < diffy)
-            {
-                p1Direction = EAST_60;
-            }
-        }        
-    }
-    else if (diffx == 0)
-    {
-        if (diffy < 0)
-        {
-            p1Direction = NORTH;
-        }
-        else if (diffy > 0)
-        {
-            p1Direction = SOUTH;
-        }
-    }
-
-    updateplayerDir(1);
-}    
-
-
