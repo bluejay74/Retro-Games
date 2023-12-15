@@ -39,14 +39,14 @@
 
 
 //collision detection definitions, add all registers
-#define P1PF                0xD005
-#define P0PF                0xD004
-#define M1PF                0xD001
-#define M0PF                0xD000
-#define M1P                 0xD009
-#define M0P                 0xD008
+#define P1PF                0xD005         //Player 1 to playfield Collision Register    
+#define P0PF                0xD004         //Player 0 to Playfield Collision Register
+#define M1PF                0xD001         //Missile 1 to Playfield Collision Register
+#define M0PF                0xD000         //Missile 0 to Playfield Collision Register
+#define M1P                 0xD009         //Missile 1 to Player Collision Register
+#define M0P                 0xD008         //Missile 0 to Player Collision Register
 
-#define HITCLR              0xD01E
+#define HITCLR              0xD01E         //Collsion Clear Register: Poking a 1 clears ALL collision registers
 
 /*
  * <-------------------- GLOBAL VARIABLES -------------------->
