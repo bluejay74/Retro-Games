@@ -993,6 +993,14 @@ void moveBackward(int tank) {
     }
 }
 
+//-------------------------------check borders------------------------------
+//purpose: during a collision, check to see if the tank is going to spin
+//         out-of-bounds, and correct it by sending it to the opposing
+//         side of the screen
+//parameters: none
+//preconditions: tank location must be set
+//post conditions: tank location may be changed
+//--------------------------------------------------------------------------
 void checkBorders() {
     //variables to make sure that they don't just jump back across the screen (doesn't trigger as move up right after move down)
     bool movedLeft0 = false;
@@ -1068,6 +1076,15 @@ void checkBorders() {
     }
 }
 
+//-----------------------spin tank------------------------
+//purpose: spin the tank if it is hit, but in different
+//         directions depending on what direction it
+//         is hit from
+//parameters: tank, either 0 for tank 1 or 1 for tank 2
+//preconditions: tank direction, location, and player hit
+//               direction must be set (set in collision)
+//post conditions: tank direction and location are changed
+//--------------------------------------------------------
 void spinTank(int tank){
 
     //if player 1 is hit
@@ -1154,6 +1171,7 @@ void spinTank(int tank){
         hitTime[1] = hitTime[1] - 1;
         if(hitTime[1] == 0) p1IsHit = false;
     }
+    //check to see if a tank hit a border wall
     checkBorders();
 }
 
