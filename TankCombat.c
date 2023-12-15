@@ -190,7 +190,6 @@ int p1Score = 16;
 //variable to run the game, if it is false a user has won
 bool gameOn = true;
 
-
 /*
     ----------------------------------------------- FUNCTION DECLARATIONS -------------------------------------------------------
 */
@@ -281,7 +280,6 @@ int main() {
             if (p0FireAvailable == false) { //start counter to limit p0 fire inputs
                 p0FireDelayCounter++;
             }
-            
             if (p0FireDelayCounter >= 60) {
                 p0FireAvailable = true;
                 p0FireDelayCounter = 0;
@@ -307,6 +305,7 @@ int main() {
             p1history = p1LastMove; //helps to fix collision bug
             p0history = p0LastMove; //helps to fix collision bug
 
+
             //This condition will only be met when either player 1 or player 2 reaches the score of 9,
             //or charcater 9 (which is 0x0019 in HEX located at Character Memory)
             if (p0Score == 25 || p1Score == 25) {
@@ -331,8 +330,8 @@ int main() {
             waitvsync();
         }
     }
-    return 0;
 
+    return 0;
 }
 
 /*
@@ -545,12 +544,17 @@ void setUpTankDisplay() {
 }
 
 //------------------------------ movePlayers ------------------------------
+// Purpose: Do actions based on player's inputs such as moving and firing.
+// Parameters: None
+// Preconditions: None
+// Postconditions: Both tank will do actions based on the user's inputs.
 void movePlayers(){
     //joystick code
     unsigned char player0move = joy_read(JOY_1);
     unsigned char player1move = joy_read(JOY_2);
     p0LastMove = player0move;
     p1LastMove = player1move;
+
     //moving player 1, only if they are not hit
     if(JOY_BTN_1(player0move) && p0FireAvailable == true && !p0IsHit) {fire(0); p0Fired = true;}
     else if(JOY_UP(player0move) && !p0IsHit) {
@@ -562,7 +566,7 @@ void movePlayers(){
         else p0FirstDiag = true;
     }
     else if(JOY_LEFT(player0move) || JOY_RIGHT(player0move) && !p0IsHit) turnplayer(player0move, 0);
-    
+
     //moving player 2, only if they are not hit
     if(JOY_BTN_1(player1move) && p1FireAvailable == true && !p1IsHit) {fire(1); p1Fired = true;}
     else if(JOY_UP(player1move) && !p1IsHit) {
@@ -611,7 +615,6 @@ void turnplayer(unsigned char turn, int player){
     //for player 2
     else if (player == 1) {
         if (p1Direction == WEST_60 && JOY_RIGHT(turn)) {
-
             p1Direction = NORTH;
         }
         else if (p1Direction == NORTH && JOY_LEFT(turn)) {
@@ -658,11 +661,10 @@ void updateplayerDir(int player){
             }
         }
     }
-    
+
     //updating player 2
     else if (player == 1) {
         if (p1Direction == SOUTH_WEST || p1Direction == EAST_SOUTH) {
-
             int counter = 7;
             for (i = p1VerticalLocation; i < p1VerticalLocation + 8; i++) {
                 POKE(playerAddress + i, tankPics[p1Direction][counter]);
@@ -1155,9 +1157,18 @@ void spinTank(int tank){
     checkBorders();
 }
 
-//add a check to the collision registers, and act if they're triggered (not finished)
+//------------------------------ checkCollision ------------------------------
+// Purpose: Move the tank backward in the specified direction.
+//          This function updates the tank's position based on its current
+//          direction and ensures smooth movement, including diagonal cases.
+// Parameters: None
+// Preconditions: None
+// Postconditions: Reading into collision registers to check if there are any
+//                 collisions. If there are collisions do the respective actions
+//                 and ensure to clear collision register after execution (writing
+//                 0's to the collision registers)
 void checkCollision(){
-    //checking for player 1 to playfield collision
+    //checking for player 1 to playfield collision 
     if(PEEK(P1PF) != 0x0000){
         if(JOY_UP(p1history)){
             moveBackward(1);
@@ -1172,6 +1183,7 @@ void checkCollision(){
             moveForward(1);
         }
     }
+
     //checking for player 0 to playfield collision
     if(PEEK(P0PF) != 0x0000){
         if(JOY_UP(p0history)){
